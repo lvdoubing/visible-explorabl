@@ -1,0 +1,1439 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>交点为什么会把我们带进倒数的世界？</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #637083;
+      --line: #d9dfeb;
+      --accent: #5b5bd6;
+      --accent-2: #0e9f8f;
+      --warm: #ef7d4d;
+      --gold: #c68a12;
+      --soft: #eef0ff;
+      --soft-2: #eaf9f6;
+      --danger: #b74747;
+      --shadow: 0 16px 40px rgba(31, 45, 80, .09);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(91, 91, 214, .10), transparent 34rem),
+        radial-gradient(circle at 100% 18%, rgba(14, 159, 143, .08), transparent 30rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+
+    .progress {
+      position: fixed;
+      inset: 0 auto auto 0;
+      width: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      z-index: 99;
+    }
+
+    .shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+
+    .hero {
+      padding: 88px 0 46px;
+      min-height: 86vh;
+      display: grid;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent);
+      font-size: .88rem;
+      font-weight: 750;
+      letter-spacing: .03em;
+    }
+
+    h1, h2, h3 { line-height: 1.18; }
+    h1 {
+      margin: 20px 0 18px;
+      max-width: 900px;
+      font-size: clamp(2.5rem, 7vw, 5.7rem);
+      letter-spacing: -.055em;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      letter-spacing: -.035em;
+    }
+    h3 { margin: 0 0 10px; font-size: 1.2rem; }
+    p { margin: 0 0 1em; }
+
+    .lead {
+      max-width: 780px;
+      font-size: clamp(1.08rem, 2.1vw, 1.35rem);
+      color: var(--muted);
+    }
+
+    .hero-question {
+      margin-top: 34px;
+      padding: 22px;
+      max-width: 760px;
+      border-left: 5px solid var(--warm);
+      border-radius: 0 18px 18px 0;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow);
+      font-size: 1.15rem;
+    }
+
+    .jump {
+      display: inline-flex;
+      margin-top: 28px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: var(--ink);
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    section { padding: 58px 0; scroll-margin-top: 24px; }
+    .section-intro { max-width: 790px; margin-bottom: 24px; color: var(--muted); }
+
+    .story-card, .lab, .explanation, .rule-card, .anki-panel {
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(217,223,235,.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .story-card { padding: clamp(22px, 5vw, 42px); }
+    .lab { overflow: hidden; }
+    .lab-head {
+      padding: 20px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .lab-body { padding: 24px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1.25fr .75fr; gap: 22px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    .control-stack { display: grid; gap: 14px; }
+    .control {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: #fbfcff;
+    }
+    .control label, .control-row label { font-weight: 700; }
+    .control-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
+    .control output { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 800; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 750;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(31,45,80,.10); }
+    .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn.teal { background: var(--accent-2); color: white; border-color: var(--accent-2); }
+    .btn.warm { background: var(--warm); color: white; border-color: var(--warm); }
+    .btn.active { outline: 3px solid rgba(91,91,214,.18); border-color: var(--accent); }
+
+    .mini-label { font-size: .82rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
+    .formula {
+      font-family: "Times New Roman", "Songti SC", serif;
+      font-size: clamp(1.25rem, 3vw, 1.7rem);
+      line-height: 1.5;
+    }
+    .formula.small { font-size: 1.1rem; }
+    .math-chip {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 9px;
+      background: var(--soft);
+      color: #3434a4;
+      font-family: "Times New Roman", serif;
+      font-weight: 700;
+    }
+
+    .prediction-box { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: end; margin-top: 22px; }
+    .prediction-result {
+      min-height: 28px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    #geometrySvg {
+      width: 100%;
+      height: auto;
+      min-height: 390px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(rgba(91,91,214,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(91,91,214,.04) 1px, transparent 1px),
+        #fcfdff;
+      background-size: 28px 28px;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .svg-label { font-size: 17px; font-weight: 750; fill: var(--ink); }
+    .svg-small { font-size: 13px; fill: var(--muted); }
+    .handle { cursor: grab; filter: drop-shadow(0 4px 6px rgba(31,45,80,.2)); }
+    .handle:active { cursor: grabbing; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .metric {
+      padding: 14px;
+      border-radius: 14px;
+      background: var(--soft);
+      min-height: 84px;
+    }
+    .metric strong { display: block; font-size: 1.55rem; font-variant-numeric: tabular-nums; }
+    .metric.teal { background: var(--soft-2); }
+    .metric.warm { background: #fff1eb; }
+
+    .derivation {
+      margin-top: 16px;
+      padding: 16px;
+      min-height: 116px;
+      border-radius: 14px;
+      background: #161b2b;
+      color: #f7f8ff;
+    }
+    .derivation .step-title { color: #aab5ff; font-weight: 800; font-size: .88rem; }
+    .derivation .formula { margin-top: 8px; }
+
+    .explanation {
+      padding: clamp(22px, 5vw, 38px);
+      background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(238,240,255,.95));
+    }
+
+    .causal-chain {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .causal-chain > div {
+      position: relative;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      text-align: center;
+      font-weight: 750;
+    }
+    .causal-chain > div:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-size: 1.3rem;
+      z-index: 2;
+    }
+
+    .mean-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: white;
+      transition: transform .2s ease, border-color .2s ease;
+    }
+    .mean-card:hover { transform: translateY(-2px); }
+    .mean-card h3 { display: flex; align-items: center; justify-content: space-between; }
+    .mean-value { font-size: 2.3rem; font-weight: 850; letter-spacing: -.04em; }
+    .mean-card.a { border-top: 5px solid var(--accent); }
+    .mean-card.g { border-top: 5px solid var(--gold); }
+    .mean-card.h { border-top: 5px solid var(--accent-2); }
+
+    .axis-panel {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fbfcff;
+    }
+    .axis-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+    .axis-wrap { position: relative; height: 126px; margin: 0 18px; }
+    .axis-line {
+      position: absolute;
+      left: 0; right: 0; top: 58px;
+      height: 4px;
+      border-radius: 999px;
+      background: #cfd6e5;
+    }
+    .axis-tick { position: absolute; top: 50px; width: 1px; height: 20px; background: #9ca8ba; }
+    .axis-marker {
+      position: absolute;
+      top: 34px;
+      transform: translateX(-50%);
+      text-align: center;
+      transition: left .3s ease;
+      min-width: 70px;
+    }
+    .axis-marker .dot {
+      width: 18px; height: 18px;
+      margin: 16px auto 4px;
+      border: 4px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px currentColor, 0 4px 10px rgba(31,45,80,.18);
+      background: currentColor;
+    }
+    .axis-marker.input { color: var(--warm); }
+    .axis-marker.result { color: var(--accent); font-weight: 800; }
+    .axis-marker.geo { color: var(--gold); font-weight: 800; }
+    .axis-marker.harm { color: var(--accent-2); font-weight: 800; }
+    .axis-caption { margin-top: 10px; color: var(--muted); text-align: center; }
+
+    .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    select {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 11px;
+      padding: 9px 12px;
+      color: var(--ink);
+    }
+
+    .bars { display: grid; gap: 12px; margin-top: 18px; }
+    .bar-row { display: grid; grid-template-columns: 90px 1fr 60px; gap: 10px; align-items: center; }
+    .bar-track { height: 15px; border-radius: 999px; background: #e8ecf4; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: inherit; transition: width .3s ease; }
+    .bar-fill.a { background: var(--accent); }
+    .bar-fill.g { background: var(--gold); }
+    .bar-fill.h { background: var(--accent-2); }
+
+    .surprise {
+      padding: clamp(24px, 5vw, 42px);
+      border-radius: var(--radius);
+      background: #171c2d;
+      color: white;
+      box-shadow: var(--shadow);
+    }
+    .surprise strong { color: #bfc7ff; }
+    .surprise .formula { color: #fff2bd; }
+
+    .rule-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .rule-card { padding: 20px; }
+    .rule-card .icon { font-size: 2rem; }
+
+    .sandbox-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 20px; }
+    .sandbox-output {
+      min-height: 330px;
+      padding: 24px;
+      border-radius: 18px;
+      background: linear-gradient(160deg, #171c2d, #252c45);
+      color: white;
+    }
+    .sandbox-number { font-size: clamp(3rem, 9vw, 6rem); line-height: 1; font-weight: 900; letter-spacing: -.06em; }
+    .sandbox-formula { margin-top: 14px; color: #d8ddff; }
+    .sandbox-note { margin-top: 18px; color: #b9c2d5; }
+
+    .takeaways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .takeaway { padding: 22px; border-radius: 18px; background: white; border: 1px solid var(--line); }
+    .takeaway .big { font-size: 2rem; font-weight: 900; color: var(--accent); }
+
+    .anki-panel { padding: 24px; }
+    .anki-list { display: grid; gap: 10px; margin: 18px 0; }
+    .anki-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+    }
+    .anki-item .back { color: var(--muted); font-size: .94rem; }
+    .status { min-height: 26px; margin-top: 10px; color: var(--accent-2); font-weight: 750; }
+
+    footer { padding: 46px 0 70px; color: var(--muted); text-align: center; }
+
+    .hidden { display: none !important; }
+    .fade-in { animation: fade .35s ease both; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 860px) {
+      .grid-2, .sandbox-grid { grid-template-columns: 1fr; }
+      .grid-3, .rule-grid, .takeaways { grid-template-columns: 1fr; }
+      .causal-chain { grid-template-columns: 1fr; }
+      .causal-chain > div:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -22px; transform: translateX(50%); }
+      .hero { min-height: auto; padding-top: 64px; }
+      #geometrySvg { min-height: 330px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+    }
+  </style>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/></head>
+<body>
+  <div class="progress" id="progress"></div>
+
+  <!-- 1. 标题 -->
+  <header class="hero shell" id="top">
+    <div>
+      <span class="eyebrow">Explorable Explanation · 几何 × 平均数 × F1</span>
+      <h1>交点为什么会把我们带进倒数的世界？</h1>
+      <p class="lead">
+        从两根交叉杆开始，亲手发现一个几何高度公式，随后追踪它为什么与调和平均、
+        几何平均、算术平均和 F1 分数发生联系。
+      </p>
+
+      <!-- 2. 开场问题 -->
+      <div class="hero-question">
+        <div class="mini-label">开场问题</div>
+        两根杆分别从高度 <span class="math-chip">6</span> 和 <span class="math-chip">3</span>
+        交叉落到对面的地面。交点高度会是多少？它会落在 3 和 6 之间吗？
+      </div>
+      <a class="jump" href="#first-example">先猜，再动手验证 ↓</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- 3. 第一个直观例子 -->
+    <section id="first-example">
+      <div class="shell">
+        <span class="eyebrow">01 · 先做预测</span>
+        <h2>第一个直观例子：6 和 3 的“中间”在哪里？</h2>
+        <p class="section-intro">
+          先不要套公式。把你的猜测放在高度尺上，然后再揭晓。认知冲突正是探索的起点。
+        </p>
+        <div class="story-card">
+          <div class="grid-2">
+            <div>
+              <h3>你的预测</h3>
+              <p>拖动滑块，猜测交点高度。常见猜测是 4.5、3 或者某个介于两者之间的数。</p>
+              <div class="prediction-box">
+                <div class="control">
+                  <div class="control-row">
+                    <label for="prediction">预测高度</label>
+                    <output id="predictionOut">4.5</output>
+                  </div>
+                  <input id="prediction" type="range" min="0.5" max="7" step="0.1" value="4.5" />
+                </div>
+                <button class="btn warm" id="lockPrediction">锁定猜测</button>
+              </div>
+              <div class="prediction-result" id="predictionResult" aria-live="polite"></div>
+            </div>
+            <div class="explanation">
+              <div class="mini-label">读者应该获得的理解</div>
+              <p>“中间”不一定意味着普通数轴上的正中点。这个几何结构可能采用另一种组合规则。</p>
+              <p><strong>适合 Anki：</strong>否。预测更适合形成直觉，而不是直接背诵。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 第一个交互模块 -->
+    <section id="geometry-lab">
+      <div class="shell">
+        <span class="eyebrow">02 · 第一个交互模块</span>
+        <h2>拖动两端：交点究竟听谁的？</h2>
+        <p class="section-intro">
+          拖动紫色和绿色手柄改变两端高度；拖动右侧柱顶的橙色手柄改变柱距。
+          试着找出哪些量改变，哪些量不变。
+        </p>
+
+        <div class="lab">
+          <div class="lab-head">
+            <strong>交叉双柱实验室</strong>
+            <div class="button-row">
+              <button class="btn" id="resetGeometry">重置 6 与 3</button>
+              <button class="btn primary" id="revealHeight">显示真实高度</button>
+            </div>
+          </div>
+          <div class="lab-body grid-2">
+            <div>
+              <svg id="geometrySvg" viewBox="0 0 800 380" role="img" aria-label="可拖动的交叉双柱几何图">
+                <g id="traceGroup"></g>
+                <polygon id="leftTriangle" fill="rgba(91,91,214,.10)" points="" class="hidden"></polygon>
+                <polygon id="rightTriangle" fill="rgba(14,159,143,.11)" points="" class="hidden"></polygon>
+                <line id="ground" x1="42" y1="320" x2="758" y2="320" stroke="#8590a3" stroke-width="4" />
+                <line id="leftPost" x1="90" y1="28" x2="90" y2="320" stroke="#31384a" stroke-width="8" stroke-linecap="round" />
+                <line id="rightPost" x1="490" y1="28" x2="490" y2="320" stroke="#31384a" stroke-width="8" stroke-linecap="round" />
+                <line id="rodA" x1="90" y1="164" x2="490" y2="320" stroke="#5b5bd6" stroke-width="7" stroke-linecap="round" />
+                <line id="rodB" x1="90" y1="320" x2="490" y2="242" stroke="#0e9f8f" stroke-width="7" stroke-linecap="round" />
+                <line id="heightGuide" x1="90" y1="268" x2="290" y2="268" stroke="#ef7d4d" stroke-width="2" stroke-dasharray="7 7" class="hidden" />
+                <line id="verticalGuide" x1="290" y1="268" x2="290" y2="320" stroke="#ef7d4d" stroke-width="2" stroke-dasharray="7 7" class="hidden" />
+                <line id="predictionLine" x1="90" y1="203" x2="490" y2="203" stroke="#b74747" stroke-width="2" stroke-dasharray="10 7" class="hidden" />
+                <circle id="intersection" cx="290" cy="268" r="10" fill="#ef7d4d" stroke="white" stroke-width="4" />
+                <circle id="handleA" class="handle" cx="90" cy="164" r="12" fill="#5b5bd6" stroke="white" stroke-width="4" tabindex="0" aria-label="拖动左侧高度 a" />
+                <circle id="handleB" class="handle" cx="490" cy="242" r="12" fill="#0e9f8f" stroke="white" stroke-width="4" tabindex="0" aria-label="拖动右侧高度 b" />
+                <circle id="handleD" class="handle" cx="490" cy="42" r="11" fill="#ef7d4d" stroke="white" stroke-width="4" tabindex="0" aria-label="拖动右侧柱改变柱距 d" />
+                <text id="labelA" class="svg-label" x="54" y="158">a = 6.0</text>
+                <text id="labelB" class="svg-label" x="510" y="236">b = 3.0</text>
+                <text id="labelH" class="svg-label" x="304" y="257">h = ?</text>
+                <text id="labelD" class="svg-small" x="270" y="350">柱距 d = 8.0</text>
+                <text class="svg-small" x="44" y="345">地面</text>
+              </svg>
+            </div>
+
+            <div class="control-stack">
+              <div class="metric-grid">
+                <div class="metric">
+                  <span class="mini-label">左端高度 a</span>
+                  <strong id="metricA">6.00</strong>
+                </div>
+                <div class="metric teal">
+                  <span class="mini-label">右端高度 b</span>
+                  <strong id="metricB">3.00</strong>
+                </div>
+                <div class="metric warm">
+                  <span class="mini-label">交点高度 h</span>
+                  <strong id="metricH">?</strong>
+                </div>
+                <div class="metric">
+                  <span class="mini-label">两倍交点高度 2h</span>
+                  <strong id="metric2H">?</strong>
+                </div>
+              </div>
+
+              <div class="control">
+                <div class="control-row"><label for="aRange">高度 a</label><output id="aOut">6.0</output></div>
+                <input id="aRange" type="range" min="0.5" max="10" step="0.1" value="6" />
+              </div>
+              <div class="control">
+                <div class="control-row"><label for="bRange">高度 b</label><output id="bOut">3.0</output></div>
+                <input id="bRange" type="range" min="0.5" max="10" step="0.1" value="3" />
+              </div>
+              <div class="control">
+                <div class="control-row"><label for="dRange">柱距 d</label><output id="dOut">8.0</output></div>
+                <input id="dRange" type="range" min="5" max="12" step="0.1" value="8" />
+              </div>
+
+              <div class="toggle-group">
+                <button class="btn" id="toggleGuides">显示辅助线</button>
+                <button class="btn" id="toggleTrace">记录交点轨迹</button>
+                <button class="btn" id="nextDerivation">揭示下一步</button>
+              </div>
+
+              <div class="derivation" id="derivationBox" aria-live="polite">
+                <div class="step-title">探索提示</div>
+                <div class="formula small">先改变柱距 d：交点的横向位置会变，高度会不会变？</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 交互后的解释文字 -->
+    <section id="geometry-explanation">
+      <div class="shell">
+        <span class="eyebrow">03 · 交互后的解释</span>
+        <h2>真正的因果链：两段比例拼成一个整体</h2>
+        <div class="explanation">
+          <p>
+            相似三角形告诉我们，交点把柱距分成两段。将两段除以总柱距后，
+            它们分别对应 <span class="math-chip">h/a</span> 与
+            <span class="math-chip">h/b</span>。两段合起来恰好是完整宽度，因此：
+          </p>
+          <p class="formula">h/a + h/b = 1　→　1/h = 1/a + 1/b　→　h = ab/(a+b)</p>
+          <div class="causal-chain">
+            <div>相似三角形</div>
+            <div>两段比例拼成 1</div>
+            <div>倒数相加</div>
+            <div>交点高度公式</div>
+          </div>
+          <p style="margin-top:22px">
+            <strong>读者应该获得的理解：</strong>公式来自几何约束，不是因为它“碰巧长得像”某个平均数。
+            <strong>适合 Anki：</strong>适合，尤其是倒数形式与推导起点。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. 第二个变量引入 -->
+    <section id="second-variable">
+      <div class="shell">
+        <span class="eyebrow">04 · 第二个变量引入</span>
+        <h2>新的变量不是另一个数字，而是“怎样定义中间”</h2>
+        <div class="story-card">
+          <p>
+            交点公式给出 <span class="math-chip">h = ab/(a+b)</span>。
+            但当 <span class="math-chip">a=b=t</span> 时，它只返回 <span class="math-chip">t/2</span>。
+            一个真正的平均数通常应该通过“相等输入测试”：
+          </p>
+          <p class="formula">M(t,t) = t</p>
+          <p>
+            因此把交点高度乘以 2，才得到调和平均：
+            <span class="math-chip">H = 2ab/(a+b)</span>。
+            接下来，我们把“平均方式”本身作为可操控变量，并与算术平均、几何平均比较。
+          </p>
+          <div class="button-row">
+            <button class="btn primary" id="copyGeometryToMeans">把上方 a、b 带入平均数实验室</button>
+            <button class="btn" id="equalInputTest">运行相等输入测试</button>
+          </div>
+          <div class="prediction-result" id="equalTestResult" aria-live="polite"></div>
+          <p><strong>适合 Anki：</strong>适合。“为什么差一个 2”是本页最重要的辨析卡之一。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. 第二个交互模块 -->
+    <section id="means-lab">
+      <div class="shell">
+        <span class="eyebrow">05 · 第二个交互模块</span>
+        <h2>三种“中间”：差、倍数与倒数</h2>
+        <p class="section-intro">
+          拖动同一组输入，观察三个结果如何分离。然后切换坐标空间，查看每种平均数为何会成为那个空间里的中点。
+        </p>
+
+        <div class="lab">
+          <div class="lab-head">
+            <strong>平均数空间转换器</strong>
+            <div class="button-row">
+              <button class="btn" id="resetMeans">重置</button>
+              <button class="btn teal" id="playImbalance">播放“从平衡到失衡”</button>
+            </div>
+          </div>
+          <div class="lab-body">
+            <div class="grid-2">
+              <div class="control-stack">
+                <div class="control">
+                  <div class="control-row"><label for="meanA">输入 a</label><output id="meanAOut">6.0</output></div>
+                  <input id="meanA" type="range" min="0.5" max="12" step="0.1" value="6" />
+                </div>
+                <div class="control">
+                  <div class="control-row"><label for="meanB">输入 b</label><output id="meanBOut">3.0</output></div>
+                  <input id="meanB" type="range" min="0.5" max="12" step="0.1" value="3" />
+                </div>
+                <div class="control">
+                  <label for="lockMode">约束模式</label><br />
+                  <select id="lockMode">
+                    <option value="free">自由调整</option>
+                    <option value="sum">保持 a+b 不变</option>
+                    <option value="product">保持 ab 不变</option>
+                  </select>
+                  <p class="axis-caption" id="lockCaption">当前没有锁定总和或乘积。</p>
+                </div>
+              </div>
+
+              <div class="grid-3" style="grid-template-columns:1fr;">
+                <div class="mean-card a">
+                  <h3>算术平均 <span>A</span></h3>
+                  <div class="mean-value" id="AValue">4.50</div>
+                  <div class="formula small">A = (a+b)/2</div>
+                  <p>普通数轴上的等距离中点。</p>
+                </div>
+                <div class="mean-card g">
+                  <h3>几何平均 <span>G</span></h3>
+                  <div class="mean-value" id="GValue">4.24</div>
+                  <div class="formula small">G = √(ab)</div>
+                  <p>倍数相等、或对数轴上的中点。</p>
+                </div>
+                <div class="mean-card h">
+                  <h3>调和平均 <span>H</span></h3>
+                  <div class="mean-value" id="HValue">4.00</div>
+                  <div class="formula small">H = 2ab/(a+b)</div>
+                  <p>倒数轴上的中点。</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="axis-panel" style="margin-top:22px">
+              <div class="axis-tabs">
+                <button class="btn active" data-axis="raw">原数空间</button>
+                <button class="btn" data-axis="log">对数空间</button>
+                <button class="btn" data-axis="reciprocal">倒数空间</button>
+              </div>
+              <div class="axis-wrap" id="axisWrap">
+                <div class="axis-line"></div>
+                <div class="axis-tick" style="left:0%"></div>
+                <div class="axis-tick" style="left:25%"></div>
+                <div class="axis-tick" style="left:50%"></div>
+                <div class="axis-tick" style="left:75%"></div>
+                <div class="axis-tick" style="left:100%"></div>
+                <div class="axis-marker input" id="axisA"><span id="axisALabel">a</span><div class="dot"></div><small id="axisAVal"></small></div>
+                <div class="axis-marker input" id="axisB"><span id="axisBLabel">b</span><div class="dot"></div><small id="axisBVal"></small></div>
+                <div class="axis-marker result" id="axisMean"><span id="axisMeanLabel">A</span><div class="dot"></div><small id="axisMeanVal"></small></div>
+              </div>
+              <p class="axis-caption" id="axisCaption">A-a = b-A：算术平均是原数空间的中点。</p>
+            </div>
+
+            <div class="bars">
+              <div class="bar-row"><strong>A</strong><div class="bar-track"><div class="bar-fill a" id="barA"></div></div><span id="barAText"></span></div>
+              <div class="bar-row"><strong>G</strong><div class="bar-track"><div class="bar-fill g" id="barG"></div></div><span id="barGText"></span></div>
+              <div class="bar-row"><strong>H</strong><div class="bar-track"><div class="bar-fill h" id="barH"></div></div><span id="barHText"></span></div>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:16px"><strong>读者应该获得的理解：</strong>三种平均数不是三条孤立公式，而是三种不同关系下的“中点”。<strong>适合 Anki：</strong>适合，公式、空间解释和排序都适合制卡。</p>
+      </div>
+    </section>
+
+    <!-- 8. 反直觉发现 -->
+    <section id="surprise">
+      <div class="shell">
+        <span class="eyebrow">06 · 反直觉发现</span>
+        <h2>输入越不平衡，三个“中间”分得越开</h2>
+        <div class="surprise">
+          <p>
+            当 <strong>a=b</strong> 时，A、G、H 完全重合。保持总和不变，再让一个数变小、另一个数变大：
+            算术平均保持不动，几何平均下降，调和平均下降得更明显。
+          </p>
+          <p class="formula">H ≤ G ≤ A</p>
+          <p id="surpriseDynamic"></p>
+          <p>
+            调和平均更靠近较小值，因此 F1 也会受到 Precision 与 Recall 中较弱一项的明显限制。
+          </p>
+          <p><strong>适合 Anki：</strong>适合，但必须附上“对于正数”的条件。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. 模型规则解释 -->
+    <section id="rules">
+      <div class="shell">
+        <span class="eyebrow">07 · 模型规则解释</span>
+        <h2>什么时候该用哪一种平均？先看数量怎样组合</h2>
+        <p class="section-intro">
+          不要根据公式外形选平均数。先问现实过程是在累加差值、累乘比例，还是累加倒数、时间或单位率。
+        </p>
+        <div class="rule-grid">
+          <article class="rule-card">
+            <div class="icon">＋</div>
+            <h3>算术平均：加法结构</h3>
+            <p class="formula small">A-a = b-A</p>
+            <p>适合等权分数、可直接相加的量，以及普通数轴上的平衡点。</p>
+            <p><strong>Anki：</strong>是</p>
+          </article>
+          <article class="rule-card">
+            <div class="icon">×</div>
+            <h3>几何平均：乘法结构</h3>
+            <p class="formula small">G/a = b/G</p>
+            <p>适合增长倍数、比例变化、复利，以及等面积正方形的边长。</p>
+            <p><strong>Anki：</strong>是</p>
+          </article>
+          <article class="rule-card">
+            <div class="icon">1/x</div>
+            <h3>调和平均：倒数结构</h3>
+            <p class="formula small">1/H = (1/a+1/b)/2</p>
+            <p>适合等距离速度、速率、并联结构和 Precision–Recall 的平衡。</p>
+            <p><strong>Anki：</strong>是</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. Sandbox 自由探索区 -->
+    <section id="sandbox">
+      <div class="shell">
+        <span class="eyebrow">08 · Sandbox</span>
+        <h2>自由探索：把平均数家族和 Fβ 放到同一张工作台</h2>
+        <p class="section-intro">
+          这里没有规定路线。改变参数、制造极端情况，看看结果会靠近较小值还是较大值。
+        </p>
+        <div class="lab">
+          <div class="lab-head">
+            <strong>Sandbox</strong>
+            <div class="button-row">
+              <button class="btn active" id="sandboxMeanBtn">幂平均模式</button>
+              <button class="btn" id="sandboxFBtn">Fβ 模式</button>
+              <button class="btn" id="sandboxRandom">随机一组</button>
+            </div>
+          </div>
+          <div class="lab-body sandbox-grid">
+            <div class="control-stack" id="meanControls">
+              <div class="control">
+                <div class="control-row"><label for="sandA">a</label><output id="sandAOut">6.0</output></div>
+                <input id="sandA" type="range" min="0.2" max="10" step="0.1" value="6" />
+              </div>
+              <div class="control">
+                <div class="control-row"><label for="sandB">b</label><output id="sandBOut">3.0</output></div>
+                <input id="sandB" type="range" min="0.2" max="10" step="0.1" value="3" />
+              </div>
+              <div class="control">
+                <div class="control-row"><label for="powerP">幂参数 p</label><output id="powerPOut">-1.0</output></div>
+                <input id="powerP" type="range" min="-4" max="4" step="0.1" value="-1" />
+                <p class="axis-caption">p=-1 为调和，p=0 为几何，p=1 为算术。</p>
+              </div>
+            </div>
+
+            <div class="control-stack hidden" id="fControls">
+              <div class="control">
+                <div class="control-row"><label for="precision">Precision</label><output id="precisionOut">0.80</output></div>
+                <input id="precision" type="range" min="0.01" max="1" step="0.01" value="0.8" />
+              </div>
+              <div class="control">
+                <div class="control-row"><label for="recall">Recall</label><output id="recallOut">0.50</output></div>
+                <input id="recall" type="range" min="0.01" max="1" step="0.01" value="0.5" />
+              </div>
+              <div class="control">
+                <div class="control-row"><label for="beta">β</label><output id="betaOut">1.00</output></div>
+                <input id="beta" type="range" min="0.2" max="3" step="0.05" value="1" />
+                <p class="axis-caption">β&gt;1 更强调 Recall；β&lt;1 更强调 Precision。</p>
+              </div>
+            </div>
+
+            <div class="sandbox-output">
+              <div class="mini-label" id="sandboxLabel">当前幂平均 Mₚ</div>
+              <div class="sandbox-number" id="sandboxNumber">4.00</div>
+              <div class="sandbox-formula formula small" id="sandboxFormula"></div>
+              <div class="sandbox-note" id="sandboxNote"></div>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:16px"><strong>读者应该获得的理解：</strong>H、G、A 是更大家族中的特殊成员；F1 则是 P 与 R 的调和平均。<strong>适合 Anki：</strong>幂参数对应关系与 Fβ 公式适合，连续拖动过程本身不适合。</p>
+      </div>
+    </section>
+
+    <!-- 11. 总结 -->
+    <section id="summary">
+      <div class="shell">
+        <span class="eyebrow">09 · 总结</span>
+        <h2>不是三种公式，而是三种“中间”</h2>
+        <div class="takeaways">
+          <div class="takeaway">
+            <div class="big">A</div>
+            <h3>普通距离的中间</h3>
+            <p>在原数空间取中点：先相加，再除以 2。</p>
+          </div>
+          <div class="takeaway">
+            <div class="big">G</div>
+            <h3>倍数关系的中间</h3>
+            <p>在对数空间取中点：先看比例，再映射回来。</p>
+          </div>
+          <div class="takeaway">
+            <div class="big">H</div>
+            <h3>倒数关系的中间</h3>
+            <p>在倒数空间取中点：先平均倒数，再取倒数。</p>
+          </div>
+        </div>
+        <div class="explanation" style="margin-top:18px">
+          <p class="formula">交点几何 → 倒数相加 → 乘 2 归一化 → 调和平均 → F1</p>
+          <p>
+            最重要的问题不是“公式是什么”，而是：<strong>现实中的量究竟以什么方式组合？</strong>
+            只有回答了这个问题，才知道哪一种平均数真正有意义。
+          </p>
+          <p><strong>适合 Anki：</strong>总结句适合做概念卡，但应搭配具体例子。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. 可生成 Anki 的知识点 -->
+    <section id="anki">
+      <div class="shell">
+        <span class="eyebrow">10 · 生成 Anki</span>
+        <h2>把探索结果带走：选择卡片并导出 TSV</h2>
+        <p class="section-intro">
+          Anki 可直接导入制表符分隔的 TSV 文件。导入时将第一列设为正面、第二列设为背面、第三列设为标签。
+        </p>
+        <div class="anki-panel">
+          <div class="button-row">
+            <button class="btn" id="selectAllCards">全选</button>
+            <button class="btn" id="selectNoCards">全不选</button>
+            <button class="btn primary" id="downloadAnki">下载 Anki TSV</button>
+            <button class="btn teal" id="copyAnki">复制 TSV</button>
+          </div>
+          <label style="display:flex;gap:10px;align-items:center;margin-top:16px">
+            <input type="checkbox" id="includeSnapshot" checked />
+            加入当前实验数值快照卡
+          </label>
+          <div class="anki-list" id="ankiList"></div>
+          <div class="status" id="ankiStatus" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">
+    一个单文件 Explorable Explanation：保存后可直接在浏览器中打开。
+  </footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+    const fmt = (v, digits = 2) => Number(v).toFixed(digits);
+
+    // 阅读进度
+    window.addEventListener('scroll', () => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      $('progress').style.width = `${max > 0 ? (scrollY / max) * 100 : 0}%`;
+    });
+
+    // ---------- 第一例：预测 ----------
+    let predictionLocked = false;
+    let predictionValue = 4.5;
+    $('prediction').addEventListener('input', (e) => {
+      predictionValue = +e.target.value;
+      $('predictionOut').textContent = fmt(predictionValue, 1);
+      if (!predictionLocked) $('predictionResult').textContent = '';
+    });
+
+    // ---------- 几何实验室 ----------
+    const geom = {
+      a: 6,
+      b: 3,
+      d: 8,
+      revealed: false,
+      guides: false,
+      trace: false,
+      derivationStep: 0,
+      drag: null,
+      tracePoints: []
+    };
+
+    const svg = $('geometrySvg');
+    const groundY = 320;
+    const xL = 90;
+    const yScale = 26;
+    const heightToY = (h) => groundY - h * yScale;
+    const xRight = () => xL + geom.d * 50;
+    const hIntersection = () => (geom.a * geom.b) / (geom.a + geom.b);
+    const xIntersection = () => xL + (geom.a / (geom.a + geom.b)) * (xRight() - xL);
+
+    const derivationSteps = [
+      ['探索提示', '先改变柱距 d：交点的横向位置会变，高度会不会变？'],
+      ['第 1 步：相似三角形', '交点把总宽度分成两段；两段比例可写成 h/a 与 h/b。'],
+      ['第 2 步：两段拼成整体', 'h/a + h/b = 1'],
+      ['第 3 步：提出 h', 'h(1/a + 1/b) = 1'],
+      ['第 4 步：倒数形式', '1/h = 1/a + 1/b'],
+      ['第 5 步：交点公式', 'h = ab/(a+b)']
+    ];
+
+    function addTracePoint(x, y) {
+      if (!geom.trace) return;
+      const last = geom.tracePoints.at(-1);
+      if (!last || Math.hypot(last.x - x, last.y - y) > 4) {
+        geom.tracePoints.push({x, y});
+        if (geom.tracePoints.length > 100) geom.tracePoints.shift();
+      }
+    }
+
+    function renderTrace() {
+      $('traceGroup').innerHTML = geom.tracePoints.map((p, i) =>
+        `<circle cx="${p.x}" cy="${p.y}" r="${2 + i / 90}" fill="rgba(239,125,77,${0.12 + i / 180})"></circle>`
+      ).join('');
+    }
+
+    function renderGeometry() {
+      const xR = xRight();
+      const yA = heightToY(geom.a);
+      const yB = heightToY(geom.b);
+      const h = hIntersection();
+      const xI = xIntersection();
+      const yI = heightToY(h);
+
+      $('rightPost').setAttribute('x1', xR);
+      $('rightPost').setAttribute('x2', xR);
+      $('rodA').setAttribute('x1', xL);
+      $('rodA').setAttribute('y1', yA);
+      $('rodA').setAttribute('x2', xR);
+      $('rodA').setAttribute('y2', groundY);
+      $('rodB').setAttribute('x1', xL);
+      $('rodB').setAttribute('y1', groundY);
+      $('rodB').setAttribute('x2', xR);
+      $('rodB').setAttribute('y2', yB);
+
+      $('handleA').setAttribute('cx', xL);
+      $('handleA').setAttribute('cy', yA);
+      $('handleB').setAttribute('cx', xR);
+      $('handleB').setAttribute('cy', yB);
+      $('handleD').setAttribute('cx', xR);
+
+      $('intersection').setAttribute('cx', xI);
+      $('intersection').setAttribute('cy', yI);
+      $('heightGuide').setAttribute('x2', xI);
+      $('heightGuide').setAttribute('y1', yI);
+      $('heightGuide').setAttribute('y2', yI);
+      $('verticalGuide').setAttribute('x1', xI);
+      $('verticalGuide').setAttribute('x2', xI);
+      $('verticalGuide').setAttribute('y1', yI);
+
+      $('leftTriangle').setAttribute('points', `${xL},${groundY} ${xL},${yA} ${xI},${yI}`);
+      $('rightTriangle').setAttribute('points', `${xI},${yI} ${xR},${groundY} ${xR},${yB}`);
+
+      $('labelA').setAttribute('y', Math.max(42, yA - 10));
+      $('labelA').textContent = `a = ${fmt(geom.a, 1)}`;
+      $('labelB').setAttribute('x', xR + 20);
+      $('labelB').setAttribute('y', Math.max(42, yB - 8));
+      $('labelB').textContent = `b = ${fmt(geom.b, 1)}`;
+      $('labelH').setAttribute('x', xI + 15);
+      $('labelH').setAttribute('y', yI - 12);
+      $('labelH').textContent = geom.revealed ? `h = ${fmt(h, 2)}` : 'h = ?';
+      $('labelD').setAttribute('x', (xL + xR) / 2 - 48);
+      $('labelD').textContent = `柱距 d = ${fmt(geom.d, 1)}`;
+
+      $('metricA').textContent = fmt(geom.a);
+      $('metricB').textContent = fmt(geom.b);
+      $('metricH').textContent = geom.revealed ? fmt(h) : '?';
+      $('metric2H').textContent = geom.revealed ? fmt(2 * h) : '?';
+      $('aRange').value = geom.a;
+      $('bRange').value = geom.b;
+      $('dRange').value = geom.d;
+      $('aOut').textContent = fmt(geom.a, 1);
+      $('bOut').textContent = fmt(geom.b, 1);
+      $('dOut').textContent = fmt(geom.d, 1);
+
+      $('heightGuide').classList.toggle('hidden', !geom.guides);
+      $('verticalGuide').classList.toggle('hidden', !geom.guides);
+      $('leftTriangle').classList.toggle('hidden', !geom.guides);
+      $('rightTriangle').classList.toggle('hidden', !geom.guides);
+
+      const predY = heightToY(predictionValue);
+      $('predictionLine').setAttribute('x1', xL);
+      $('predictionLine').setAttribute('x2', xR);
+      $('predictionLine').setAttribute('y1', predY);
+      $('predictionLine').setAttribute('y2', predY);
+      $('predictionLine').classList.toggle('hidden', !predictionLocked);
+
+      addTracePoint(xI, yI);
+      renderTrace();
+      renderSurprise();
+    }
+
+    function setGeomFromRange(key, value) {
+      geom[key] = +value;
+      renderGeometry();
+    }
+
+    $('aRange').addEventListener('input', e => setGeomFromRange('a', e.target.value));
+    $('bRange').addEventListener('input', e => setGeomFromRange('b', e.target.value));
+    $('dRange').addEventListener('input', e => setGeomFromRange('d', e.target.value));
+
+    $('lockPrediction').addEventListener('click', () => {
+      predictionLocked = true;
+      geom.revealed = true;
+      const trueH = hIntersection();
+      const gap = Math.abs(predictionValue - trueH);
+      $('predictionResult').textContent = `你的预测是 ${fmt(predictionValue,1)}；真实高度是 ${fmt(trueH,2)}，相差 ${fmt(gap,2)}。注意：结果低于当前较小输入 ${fmt(Math.min(geom.a, geom.b),1)}。`;
+      renderGeometry();
+      document.querySelector('#geometry-lab').scrollIntoView({behavior:'smooth'});
+    });
+
+    $('revealHeight').addEventListener('click', () => {
+      geom.revealed = true;
+      renderGeometry();
+    });
+
+    $('resetGeometry').addEventListener('click', () => {
+      Object.assign(geom, {a:6, b:3, d:8, revealed:false, guides:false, trace:false, derivationStep:0, tracePoints:[]});
+      predictionLocked = false;
+      $('toggleGuides').classList.remove('active');
+      $('toggleTrace').classList.remove('active');
+      renderDerivation();
+      renderGeometry();
+    });
+
+    $('toggleGuides').addEventListener('click', (e) => {
+      geom.guides = !geom.guides;
+      e.currentTarget.classList.toggle('active', geom.guides);
+      renderGeometry();
+    });
+
+    $('toggleTrace').addEventListener('click', (e) => {
+      geom.trace = !geom.trace;
+      if (!geom.trace) geom.tracePoints = [];
+      e.currentTarget.classList.toggle('active', geom.trace);
+      renderGeometry();
+    });
+
+    function renderDerivation() {
+      const [title, content] = derivationSteps[geom.derivationStep];
+      $('derivationBox').innerHTML = `<div class="step-title">${title}</div><div class="formula small fade-in">${content}</div>`;
+    }
+
+    $('nextDerivation').addEventListener('click', () => {
+      geom.derivationStep = Math.min(derivationSteps.length - 1, geom.derivationStep + 1);
+      if (geom.derivationStep >= 1) geom.guides = true;
+      $('toggleGuides').classList.toggle('active', geom.guides);
+      renderDerivation();
+      renderGeometry();
+    });
+
+    function svgPoint(evt) {
+      const pt = svg.createSVGPoint();
+      pt.x = evt.clientX;
+      pt.y = evt.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+
+    function beginDrag(kind, evt) {
+      geom.drag = kind;
+      evt.preventDefault();
+    }
+    $('handleA').addEventListener('pointerdown', e => beginDrag('a', e));
+    $('handleB').addEventListener('pointerdown', e => beginDrag('b', e));
+    $('handleD').addEventListener('pointerdown', e => beginDrag('d', e));
+
+    window.addEventListener('pointermove', (evt) => {
+      if (!geom.drag) return;
+      const p = svgPoint(evt);
+      if (geom.drag === 'a') geom.a = clamp((groundY - p.y) / yScale, .5, 10);
+      if (geom.drag === 'b') geom.b = clamp((groundY - p.y) / yScale, .5, 10);
+      if (geom.drag === 'd') geom.d = clamp((p.x - xL) / 50, 5, 12);
+      renderGeometry();
+    });
+    window.addEventListener('pointerup', () => geom.drag = null);
+
+    // ---------- 平均数实验室 ----------
+    const means = {
+      a: 6,
+      b: 3,
+      axis: 'raw',
+      lock: 'free',
+      lockValue: null,
+      animating: false,
+      raf: null
+    };
+
+    const calcMeans = (a, b) => ({
+      A: (a + b) / 2,
+      G: Math.sqrt(a * b),
+      H: 2 * a * b / (a + b)
+    });
+
+    function positionInDomain(value, min, max) {
+      return clamp((value - min) / (max - min) * 100, 0, 100);
+    }
+
+    function renderAxis() {
+      const {a,b} = means;
+      const {A,G,H} = calcMeans(a,b);
+      let va, vb, vm, min, max, labels, caption;
+
+      if (means.axis === 'raw') {
+        [va,vb,vm,min,max] = [a,b,A,0,12.5];
+        labels = ['a','b','A'];
+        caption = `A-a = b-A：${fmt(A-a)} = ${fmt(b-A)}。算术平均是原数空间的中点。`;
+      } else if (means.axis === 'log') {
+        [va,vb,vm,min,max] = [Math.log(a),Math.log(b),Math.log(G),Math.log(.5),Math.log(12.5)];
+        labels = ['ln a','ln b','ln G'];
+        caption = `ln G-ln a = ln b-ln G：几何平均是对数空间的中点，也满足 G/a = b/G。`;
+      } else {
+        [va,vb,vm,min,max] = [1/a,1/b,1/H,1/12.5,1/.5];
+        labels = ['1/a','1/b','1/H'];
+        caption = `1/H = (1/a+1/b)/2：调和平均是倒数空间的中点。`;
+      }
+
+      $('axisA').style.left = `${positionInDomain(va,min,max)}%`;
+      $('axisB').style.left = `${positionInDomain(vb,min,max)}%`;
+      $('axisMean').style.left = `${positionInDomain(vm,min,max)}%`;
+      $('axisALabel').textContent = labels[0];
+      $('axisBLabel').textContent = labels[1];
+      $('axisMeanLabel').textContent = labels[2];
+      $('axisAVal').textContent = fmt(va);
+      $('axisBVal').textContent = fmt(vb);
+      $('axisMeanVal').textContent = fmt(vm);
+      $('axisCaption').textContent = caption;
+      $('axisMean').className = `axis-marker ${means.axis === 'raw' ? 'result' : means.axis === 'log' ? 'geo' : 'harm'}`;
+    }
+
+    function renderMeans() {
+      const {A,G,H} = calcMeans(means.a, means.b);
+      $('meanA').value = means.a;
+      $('meanB').value = means.b;
+      $('meanAOut').textContent = fmt(means.a,1);
+      $('meanBOut').textContent = fmt(means.b,1);
+      $('AValue').textContent = fmt(A);
+      $('GValue').textContent = fmt(G);
+      $('HValue').textContent = fmt(H);
+      $('barA').style.width = `${A/12.5*100}%`;
+      $('barG').style.width = `${G/12.5*100}%`;
+      $('barH').style.width = `${H/12.5*100}%`;
+      $('barAText').textContent = fmt(A);
+      $('barGText').textContent = fmt(G);
+      $('barHText').textContent = fmt(H);
+      renderAxis();
+      renderSurprise();
+    }
+
+    function setMeanInput(which, raw) {
+      const value = +raw;
+      if (means.lock === 'free') {
+        means[which] = value;
+      } else if (means.lock === 'sum') {
+        means[which] = value;
+        const other = which === 'a' ? 'b' : 'a';
+        means[other] = clamp(means.lockValue - value, .5, 12);
+        means[which] = means.lockValue - means[other];
+      } else if (means.lock === 'product') {
+        means[which] = value;
+        const other = which === 'a' ? 'b' : 'a';
+        means[other] = clamp(means.lockValue / value, .5, 12);
+        means[which] = means.lockValue / means[other];
+      }
+      renderMeans();
+    }
+
+    $('meanA').addEventListener('input', e => setMeanInput('a', e.target.value));
+    $('meanB').addEventListener('input', e => setMeanInput('b', e.target.value));
+
+    $('lockMode').addEventListener('change', e => {
+      means.lock = e.target.value;
+      if (means.lock === 'sum') means.lockValue = means.a + means.b;
+      if (means.lock === 'product') means.lockValue = means.a * means.b;
+      $('lockCaption').textContent = means.lock === 'free'
+        ? '当前没有锁定总和或乘积。'
+        : means.lock === 'sum'
+          ? `已锁定 a+b = ${fmt(means.lockValue)}。拖动一端，另一端自动补偿。`
+          : `已锁定 ab = ${fmt(means.lockValue)}。拖动一端，另一端反向变化。`;
+      renderMeans();
+    });
+
+    document.querySelectorAll('[data-axis]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        means.axis = btn.dataset.axis;
+        document.querySelectorAll('[data-axis]').forEach(b => b.classList.toggle('active', b === btn));
+        renderAxis();
+      });
+    });
+
+    $('copyGeometryToMeans').addEventListener('click', () => {
+      means.a = geom.a;
+      means.b = geom.b;
+      means.lock = 'free';
+      $('lockMode').value = 'free';
+      $('lockCaption').textContent = '已带入上方几何数值。';
+      renderMeans();
+      document.querySelector('#means-lab').scrollIntoView({behavior:'smooth'});
+    });
+
+    $('equalInputTest').addEventListener('click', () => {
+      const t = 5;
+      const j = t*t/(t+t);
+      const H = 2*j;
+      $('equalTestResult').textContent = `令 a=b=${t}：交点公式返回 ${fmt(j,1)}，未通过；乘以 2 后返回 ${fmt(H,1)}，调和平均通过 M(t,t)=t。`;
+    });
+
+    $('resetMeans').addEventListener('click', () => {
+      stopImbalance();
+      Object.assign(means, {a:6,b:3,axis:'raw',lock:'free',lockValue:null});
+      $('lockMode').value = 'free';
+      $('lockCaption').textContent = '当前没有锁定总和或乘积。';
+      document.querySelectorAll('[data-axis]').forEach(b => b.classList.toggle('active', b.dataset.axis === 'raw'));
+      renderMeans();
+    });
+
+    function stopImbalance() {
+      means.animating = false;
+      if (means.raf) cancelAnimationFrame(means.raf);
+      means.raf = null;
+      $('playImbalance').textContent = '播放“从平衡到失衡”';
+    }
+
+    $('playImbalance').addEventListener('click', () => {
+      if (means.animating) { stopImbalance(); return; }
+      means.animating = true;
+      means.lock = 'sum';
+      means.lockValue = 12;
+      $('lockMode').value = 'sum';
+      $('lockCaption').textContent = '动画中锁定 a+b = 12。';
+      $('playImbalance').textContent = '暂停动画';
+      const start = performance.now();
+      const duration = 7000;
+      function frame(now) {
+        if (!means.animating) return;
+        const t = ((now - start) % duration) / duration;
+        const wave = (1 - Math.cos(t * Math.PI * 2)) / 2;
+        means.a = 6 - 5 * wave;
+        means.b = 12 - means.a;
+        renderMeans();
+        means.raf = requestAnimationFrame(frame);
+      }
+      means.raf = requestAnimationFrame(frame);
+    });
+
+    function renderSurprise() {
+      if (!$('surpriseDynamic')) return;
+      const {A,G,H} = calcMeans(means.a,means.b);
+      const ratio = Math.max(means.a,means.b) / Math.min(means.a,means.b);
+      $('surpriseDynamic').innerHTML = `当前 a=${fmt(means.a,1)}、b=${fmt(means.b,1)}，较大值是较小值的 <strong>${fmt(ratio,2)} 倍</strong>。此时 A=${fmt(A)}、G=${fmt(G)}、H=${fmt(H)}。`;
+    }
+
+    // ---------- Sandbox ----------
+    const sandbox = { mode:'mean' };
+    function powerMean(a,b,p) {
+      if (Math.abs(p) < 0.0001) return Math.sqrt(a*b);
+      return Math.pow((Math.pow(a,p)+Math.pow(b,p))/2, 1/p);
+    }
+
+    function renderSandbox() {
+      if (sandbox.mode === 'mean') {
+        const a = +$('sandA').value;
+        const b = +$('sandB').value;
+        const p = +$('powerP').value;
+        const value = powerMean(a,b,p);
+        $('sandAOut').textContent = fmt(a,1);
+        $('sandBOut').textContent = fmt(b,1);
+        $('powerPOut').textContent = fmt(p,1);
+        $('sandboxLabel').textContent = '当前幂平均 Mₚ';
+        $('sandboxNumber').textContent = fmt(value);
+        $('sandboxFormula').textContent = Math.abs(p) < .05
+          ? 'p≈0：M₀ = √(ab)'
+          : `Mₚ = ((aᵖ+bᵖ)/2)^(1/p)，p=${fmt(p,1)}`;
+        const name = Math.abs(p+1)<.06 ? '调和平均' : Math.abs(p)<.06 ? '几何平均' : Math.abs(p-1)<.06 ? '算术平均' : '幂平均家族中的其他成员';
+        $('sandboxNote').textContent = `当前接近：${name}。增大 p，结果会更偏向较大的输入；减小 p，结果会更偏向较小的输入。`;
+      } else {
+        const P = +$('precision').value;
+        const R = +$('recall').value;
+        const beta = +$('beta').value;
+        const beta2 = beta*beta;
+        const F = (1+beta2)*P*R/(beta2*P+R);
+        $('precisionOut').textContent = fmt(P);
+        $('recallOut').textContent = fmt(R);
+        $('betaOut').textContent = fmt(beta);
+        $('sandboxLabel').textContent = `当前 F${fmt(beta,1)}`;
+        $('sandboxNumber').textContent = fmt(F,3);
+        $('sandboxFormula').textContent = 'Fβ = (1+β²)PR / (β²P+R)';
+        $('sandboxNote').textContent = beta > 1.02
+          ? 'β>1：当前更强调 Recall。'
+          : beta < .98
+            ? 'β<1：当前更强调 Precision。'
+            : 'β=1：这就是 Precision 与 Recall 的调和平均，即 F1。';
+      }
+    }
+
+    ['sandA','sandB','powerP','precision','recall','beta'].forEach(id => $(id).addEventListener('input', renderSandbox));
+
+    function setSandboxMode(mode) {
+      sandbox.mode = mode;
+      $('meanControls').classList.toggle('hidden', mode !== 'mean');
+      $('fControls').classList.toggle('hidden', mode !== 'f');
+      $('sandboxMeanBtn').classList.toggle('active', mode === 'mean');
+      $('sandboxFBtn').classList.toggle('active', mode === 'f');
+      renderSandbox();
+    }
+    $('sandboxMeanBtn').addEventListener('click', () => setSandboxMode('mean'));
+    $('sandboxFBtn').addEventListener('click', () => setSandboxMode('f'));
+    $('sandboxRandom').addEventListener('click', () => {
+      if (sandbox.mode === 'mean') {
+        $('sandA').value = fmt(.2 + Math.random()*9.8,1);
+        $('sandB').value = fmt(.2 + Math.random()*9.8,1);
+        $('powerP').value = fmt(-4 + Math.random()*8,1);
+      } else {
+        $('precision').value = fmt(.05 + Math.random()*.95,2);
+        $('recall').value = fmt(.05 + Math.random()*.95,2);
+        $('beta').value = fmt(.2 + Math.random()*2.8,2);
+      }
+      renderSandbox();
+    });
+
+    // ---------- Anki ----------
+    const cards = [
+      {front:'交叉双柱的交点高度公式是什么？', back:'若两端高度为 a、b，则 h = ab/(a+b)。', tags:'平均数::交点几何'},
+      {front:'交点高度公式的倒数形式是什么？', back:'1/h = 1/a + 1/b。', tags:'平均数::倒数结构'},
+      {front:'ab/(a+b) 是调和平均数吗？', back:'不是。它是两个数调和平均数的一半。调和平均为 2ab/(a+b)。', tags:'平均数::易错点'},
+      {front:'为什么调和平均公式中需要因子 2？', back:'因为要平均两个倒数，并使相等输入测试 H(t,t)=t 成立。', tags:'平均数::归一化'},
+      {front:'两个正数的算术平均公式是什么？', back:'A=(a+b)/2。它是原数空间中的等距离中点。', tags:'平均数::算术平均'},
+      {front:'两个正数的几何平均公式是什么？', back:'G=√(ab)。它满足 G/a=b/G，也是对数空间中的中点。', tags:'平均数::几何平均'},
+      {front:'两个正数的调和平均公式是什么？', back:'H=2ab/(a+b)=2/(1/a+1/b)。它是倒数空间中的中点。', tags:'平均数::调和平均'},
+      {front:'对正数 a、b，三种平均数的排序是什么？', back:'H≤G≤A；当且仅当 a=b 时三者相等。', tags:'平均数::不等式'},
+      {front:'F1 与调和平均有什么关系？', back:'F1 是 Precision 与 Recall 的调和平均：F1=2PR/(P+R)。', tags:'机器学习::F1'},
+      {front:'算术、几何、调和平均分别对应哪种“中点”？', back:'算术：原数空间；几何：对数空间；调和：倒数空间。', tags:'平均数::统一结构'},
+      {front:'什么时候更适合使用几何平均？', back:'当数量按比例或倍数连续组合，例如增长倍数、复利和比例变化。', tags:'平均数::应用'},
+      {front:'什么时候更适合使用调和平均？', back:'当问题涉及速率、单位率、等距离速度、并联结构或倒数相加。', tags:'平均数::应用'},
+      {front:'幂平均参数 p=-1、0、1 分别对应什么？', back:'p=-1 为调和平均，p→0 为几何平均，p=1 为算术平均。', tags:'平均数::幂平均'}
+    ];
+
+    function renderAnkiList() {
+      $('ankiList').innerHTML = cards.map((c,i) => `
+        <label class="anki-item">
+          <input type="checkbox" class="anki-check" data-index="${i}" checked />
+          <span><strong>${c.front}</strong><br><span class="back">${c.back}</span></span>
+        </label>
+      `).join('');
+    }
+
+    function sanitizeTSV(text) {
+      return String(text).replace(/\t/g,' ').replace(/\r?\n/g,'<br>');
+    }
+
+    function selectedCards() {
+      const selected = [...document.querySelectorAll('.anki-check:checked')].map(el => cards[+el.dataset.index]);
+      if ($('includeSnapshot').checked) {
+        const {A,G,H} = calcMeans(means.a,means.b);
+        selected.push({
+          front:`当前实验中 a=${fmt(means.a,1)}、b=${fmt(means.b,1)} 时，A、G、H 分别是多少？`,
+          back:`A=${fmt(A)}，G=${fmt(G)}，H=${fmt(H)}，并满足 H≤G≤A。`,
+          tags:'平均数::实验快照'
+        });
+      }
+      return selected;
+    }
+
+    function buildTSV() {
+      return selectedCards().map(c => [c.front,c.back,c.tags].map(sanitizeTSV).join('\t')).join('\n');
+    }
+
+    $('selectAllCards').addEventListener('click', () => document.querySelectorAll('.anki-check').forEach(c => c.checked = true));
+    $('selectNoCards').addEventListener('click', () => document.querySelectorAll('.anki-check').forEach(c => c.checked = false));
+
+    $('downloadAnki').addEventListener('click', () => {
+      const data = buildTSV();
+      if (!data) { $('ankiStatus').textContent = '请至少选择一张卡片。'; return; }
+      const blob = new Blob(['\ufeff' + data], {type:'text/tab-separated-values;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '交点与三种平均数_Anki.tsv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      $('ankiStatus').textContent = `已生成 ${selectedCards().length} 张卡片。`;
+    });
+
+    $('copyAnki').addEventListener('click', async () => {
+      const data = buildTSV();
+      if (!data) { $('ankiStatus').textContent = '请至少选择一张卡片。'; return; }
+      try {
+        await navigator.clipboard.writeText(data);
+        $('ankiStatus').textContent = `已复制 ${selectedCards().length} 张卡片的 TSV 内容。`;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = data;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        $('ankiStatus').textContent = `已复制 ${selectedCards().length} 张卡片的 TSV 内容。`;
+      }
+    });
+
+    // 初始渲染
+    renderDerivation();
+    renderGeometry();
+    renderMeans();
+    renderSandbox();
+    renderAnkiList();
+  </script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/SoruxGPT.js"></script></body>
+</html>
