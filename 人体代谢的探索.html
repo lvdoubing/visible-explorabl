@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代谢引擎：人体代谢机制沙盘</title>
+<style>
+  /* ===== 基础重置与字体 ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #1a1d27;
+    --bg3: #232738;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #f472b6;
+    --warn: #fb923c;
+    --danger: #f87171;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --border: #2d3248;
+    --glucose: #34d399;
+    --insulin: #818cf8;
+    --cortisol: #fb923c;
+    --gh: #38bdf8;
+    --melatonin: #a78bfa;
+    --fat: #fbbf24;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Georgia', 'Noto Serif SC', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    font-size: 17px;
+    overflow-x: hidden;
+  }
+
+  /* ===== 进度条 ===== */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    z-index: 1000;
+    transition: width 0.1s;
+  }
+
+  /* ===== 导航 ===== */
+  nav {
+    position: fixed;
+    top: 3px; left: 0; right: 0;
+    background: rgba(15,17,23,0.92);
+    backdrop-filter: blur(12px);
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 999;
+    border-bottom: 1px solid var(--border);
+  }
+  nav .logo { font-size: 13px; color: var(--accent); letter-spacing: 2px; font-family: monospace; }
+  nav .nav-links { display: flex; gap: 20px; }
+  nav .nav-links a { font-size: 12px; color: var(--text2); text-decoration: none; letter-spacing: 1px; transition: color 0.2s; }
+  nav .nav-links a:hover { color: var(--accent); }
+
+  /* ===== 主容器 ===== */
+  main { max-width: 820px; margin: 0 auto; padding: 80px 24px 120px; }
+
+  /* ===== 排版 ===== */
+  h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.2; margin-bottom: 24px; }
+  h2 { font-size: clamp(20px, 3vw, 28px); margin: 64px 0 16px; }
+  h3 { font-size: 18px; margin: 32px 0 12px; color: var(--accent); }
+  p { margin: 16px 0; color: var(--text); }
+  .lead { font-size: 20px; color: var(--text); line-height: 1.9; }
+  .caption { font-size: 13px; color: var(--text2); margin: 8px 0; font-style: italic; }
+  strong { color: var(--accent); }
+  em { color: var(--accent2); font-style: normal; }
+
+  /* ===== 章节分隔 ===== */
+  .section { margin: 80px 0; }
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 64px 0;
+  }
+
+  /* ===== 标注块 ===== */
+  .callout {
+    background: var(--bg2);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    border-radius: 0 8px 8px 0;
+    margin: 24px 0;
+  }
+  .callout.warn { border-color: var(--warn); }
+  .callout.danger { border-color: var(--danger); }
+  .callout.insight { border-color: var(--accent2); }
+  .callout-title { font-size: 11px; letter-spacing: 2px; color: var(--text2); margin-bottom: 8px; }
+
+  /* ===== 交互模块容器 ===== */
+  .interactive {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 40px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .interactive::before {
+    content: 'INTERACTIVE';
+    position: absolute;
+    top: 16px; right: 16px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    opacity: 0.6;
+    font-family: monospace;
+  }
+  .interactive-title {
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 24px;
+    font-family: monospace;
+  }
+
+  /* ===== 滑块 ===== */
+  .slider-group { margin: 16px 0; }
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+  .slider-value {
+    font-family: monospace;
+    font-size: 16px;
+    color: var(--accent);
+    min-width: 60px;
+    text-align: right;
+  }
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg3);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(110,231,183,0.5);
+    transition: box-shadow 0.2s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 16px rgba(110,231,183,0.8);
+  }
+
+  /* ===== 仪表盘 ===== */
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 24px 0;
+  }
+  .metric-card {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s;
+  }
+  .metric-card.alert { border-color: var(--danger); background: rgba(248,113,113,0.05); }
+  .metric-card.warn { border-color: var(--warn); background: rgba(251,146,60,0.05); }
+  .metric-card.good { border-color: var(--accent); background: rgba(110,231,183,0.05); }
+  .metric-name { font-size: 11px; color: var(--text2); letter-spacing: 1px; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-family: monospace; font-weight: bold; }
+  .metric-unit { font-size: 11px; color: var(--text2); margin-left: 4px; }
+
+  /* ===== Canvas 图表 ===== */
+  .chart-container {
+    position: relative;
+    width: 100%;
+    margin: 16px 0;
+  }
+  canvas {
+    width: 100% !important;
+    border-radius: 8px;
+    background: var(--bg3);
+  }
+
+  /* ===== 进度条组件 ===== */
+  .progress-bar-container { margin: 12px 0; }
+  .progress-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .progress-track {
+    height: 12px;
+    background: var(--bg3);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease, background 0.3s;
+  }
+  .progress-marker {
+    position: absolute;
+    top: 0; height: 100%; width: 2px;
+    background: var(--warn);
+  }
+
+  /* ===== 状态徽章 ===== */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .badge-green { background: rgba(110,231,183,0.15); color: var(--accent); border: 1px solid var(--accent); }
+  .badge-red { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid var(--danger); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--warn); border: 1px solid var(--warn); }
+  .badge-purple { background: rgba(129,140,248,0.15); color: var(--accent2); border: 1px solid var(--accent2); }
+
+  /* ===== 按钮 ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary {
+    background: rgba(110,231,183,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-primary:hover { background: rgba(110,231,183,0.2); }
+
+  /* ===== Teeter-totter ===== */
+  #seesaw-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+  }
+  #seesaw-canvas { cursor: default; }
+
+  /* ===== 时间轴 ===== */
+  .timeline-wrapper { overflow-x: auto; padding-bottom: 8px; }
+
+  /* ===== Sandbox ===== */
+  .sandbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 600px) { .sandbox-grid { grid-template-columns: 1fr; } }
+  .sandbox-section-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+
+  /* ===== Anki ===== */
+  #anki-section {
+    background: var(--bg2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 80px;
+    border: 1px solid var(--border);
+  }
+  .anki-card {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 12px 0;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .anki-card:hover { border-color: var(--accent2); }
+  .anki-card.selected { border-color: var(--accent); background: rgba(110,231,183,0.05); }
+  .anki-q { font-size: 14px; color: var(--text2); margin-bottom: 8px; }
+  .anki-a {
+    font-size: 14px;
+    color: var(--accent);
+    display: none;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .anki-a.visible { display: block; }
+  .anki-tag {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+  .anki-checkbox {
+    float: right;
+    width: 16px; height: 16px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .anki-card.selected .anki-checkbox::after { content: '✓'; }
+
+  /* ===== 英雄区 ===== */
+  .hero {
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 0 60px;
+    position: relative;
+  }
+  .hero-tag {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 24px;
+    font-family: monospace;
+  }
+
+  /* ===== 粒子背景 ===== */
+  #particle-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.3;
+  }
+
+  /* ===== 开场问题 ===== */
+  .question-block {
+    font-size: clamp(20px, 3vw, 32px);
+    line-height: 1.6;
+    padding: 40px 0;
+    color: var(--text);
+  }
+  .question-block .q-line { opacity: 0; transform: translateY(20px); transition: all 0.6s; }
+  .question-block .q-line.visible { opacity: 1; transform: translateY(0); }
+
+  /* ===== 动画 ===== */
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: fadeIn 0.6s ease forwards; }
+
+  .insight-reveal {
+    background: linear-gradient(135deg, rgba(129,140,248,0.1), rgba(110,231,183,0.1));
+    border: 1px solid var(--accent2);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 32px 0;
+  }
+  .insight-title { color: var(--accent2); font-size: 13px; letter-spacing: 2px; margin-bottom: 12px; }
+
+  /* ===== 流向指示器 ===== */
+  .flow-arrow {
+    text-align: center;
+    color: var(--accent);
+    font-size: 24px;
+    margin: 8px 0;
+    animation: float 2s ease-in-out infinite;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 600px) {
+    nav .nav-links { display: none; }
+    .interactive { padding: 20px 16px; }
+    .dashboard { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ===== 选择题 ===== */
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+  .quiz-option {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: var(--bg3);
+  }
+  .quiz-option:hover { border-color: var(--accent2); }
+  .quiz-option.correct { border-color: var(--accent); background: rgba(110,231,183,0.1); }
+  .quiz-option.wrong { border-color: var(--danger); background: rgba(248,113,113,0.1); }
+  .quiz-feedback { font-size: 14px; margin-top: 12px; padding: 12px; border-radius: 8px; display: none; }
+  .quiz-feedback.show { display: block; }
+
+  /* ===== 场景按钮 ===== */
+  .scenario-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+
+  /* ===== 页脚 ===== */
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text2);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    margin-top: 80px;
+  }
+
+  /* toast */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+
+  /* ===== 修复版：语义、响应式与可访问性 ===== */
+  .model-note {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    background: rgba(129,140,248,0.06);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 14px 0;
+  }
+  .model-note strong { color: var(--accent2); }
+  .sandbox-input-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .nav-toggle {
+    display: none;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .evidence-list { padding-left: 20px; color: var(--text2); }
+  .evidence-list li { margin: 12px 0; }
+  .evidence-list a { color: var(--accent2); text-underline-offset: 3px; }
+  .quiz-option { width: 100%; text-align: left; color: var(--text); font-family: inherit; }
+  .quiz-option:focus-visible,
+  .btn:focus-visible,
+  .nav-toggle:focus-visible,
+  .anki-card:focus-visible,
+  input[type=range]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 760px) {
+    nav { padding: 10px 16px; }
+    .nav-toggle { display: inline-flex; }
+    nav .nav-links {
+      display: none;
+      position: absolute;
+      top: 54px;
+      left: 12px;
+      right: 12px;
+      flex-direction: column;
+      gap: 0;
+      background: rgba(15,17,23,0.98);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+    }
+    nav .nav-links.open { display: flex; }
+    nav .nav-links a { padding: 10px 12px; }
+    .sandbox-input-grid { grid-template-columns: 1fr; gap: 8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    #particle-canvas { display: none; }
+  }
+
+</style>
+<link rel="stylesheet" href="/Static/css/Global.css"/><link rel="stylesheet" href="/Web/css/Global.css"/><link rel="stylesheet" href="/Web/css/SoruxGPT.css"/></head>
+<body>
+
+<!-- 进度条 -->
+<div id="progress-bar"></div>
+
+<!-- 粒子背景 -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- 导航 -->
+<nav aria-label="主导航">
+  <div class="logo">⬡ METABOLIC ENGINE · v2</div>
+  <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">菜单</button>
+  <div class="nav-links" id="nav-links">
+    <a href="#section-intro">开始</a>
+    <a href="#section-fuel">燃料路由</a>
+    <a href="#section-clock">昼夜节律</a>
+    <a href="#section-seesaw">信号跷跷板</a>
+    <a href="#section-sandbox">自由探索</a>
+    <a href="#section-evidence">证据边界</a>
+    <a href="#anki-section">Anki 卡片</a>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<main>
+
+<!-- ============================================================ -->
+<!-- 1. 英雄区 / 标题                                               -->
+<!-- ============================================================ -->
+<section class="hero" id="section-intro">
+  <div class="hero-tag">EXPLORABLE EXPLANATION · 代谢机制沙盘</div>
+  <h1>拨动变量，观察身体如何<br><span style="color:var(--accent)">分配燃料与调节信号</span></h1>
+  <p class="lead" style="max-width:620px; margin-top: 24px;">
+    这不是临床预测器，而是一张可以操控的机制地图。<br>
+    你将改变饮食、进餐时间、运动、睡眠与压力等条件，观察血糖反应、
+    脂肪新生倾向、脂解支持、mTOR / AMPK 与自噬相关信号如何相对变化。
+  </p>
+  <div class="model-note" style="max-width:650px;">
+    <strong>阅读方式：</strong>页面中的 0–10 分均为教学用相对指数，不等于化验值，也不能用于诊断、用药或制定极端断食方案。
+  </div>
+  <div style="margin-top: 40px; display: flex; gap: 16px; flex-wrap: wrap;">
+    <a href="#section-q1" class="btn btn-primary">开始探索 →</a>
+    <a href="#anki-section" class="btn">生成 Anki 卡片</a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 2. 开场问题                                                    -->
+<!-- ============================================================ -->
+<section class="section" id="section-q1">
+  <div class="question-block" id="q-block">
+    <div class="q-line">同样一份含碳水的餐食，</div>
+    <div class="q-line">早上吃 vs 深夜吃——</div>
+    <div class="q-line" style="color: var(--accent);">最稳妥的科学结论是什么？</div>
+  </div>
+
+  <div class="quiz-options" id="quiz1">
+    <button type="button" class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz1')">A. 总热量相同，所以餐后反应完全一样</button>
+    <button type="button" class="quiz-option" data-correct="true" onclick="checkQuiz(this,'quiz1')">B. 夜间通常葡萄糖耐量较低，但差异因人而异，不能固定换算成脂肪克数</button>
+    <button type="button" class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz1')">C. 深夜进食一定会多合成 40% 以上脂肪</button>
+    <button type="button" class="quiz-option" data-correct="false" onclick="checkQuiz(this,'quiz1')">D. 晚上代谢更快，因此深夜吃更有利</button>
+  </div>
+  <div class="quiz-feedback" id="quiz1-feedback" aria-live="polite"></div>
+
+  <p style="margin-top: 32px;">
+    更稳妥的答案是 <strong>B</strong>。受昼夜节律影响，健康人群在生物学晚间往往表现出较低的葡萄糖耐量；
+    但餐后反应还取决于睡眠、昼夜类型、运动、餐食组成和个体胰岛素敏感性。
+    因此，本页面只模拟<strong>方向与相对强度</strong>，不把进餐时刻直接换算成脂肪合成克数。
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 3. 第一个直观例子：肝糖原水位计                                   -->
+<!-- ============================================================ -->
+<section class="section" id="section-fuel">
+  <h2>场景一：燃料路由器</h2>
+  <p class="lead">肝脏是身体的「中央调度室」。每一口碳水进来，它都在做一道选题：</p>
+
+  <div style="display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 32px 0; text-align: center;">
+    <div style="background: var(--bg2); border-radius: 10px; padding: 16px; border: 1px solid var(--border);">
+      <div style="font-size: 28px;">⚡</div>
+      <div style="font-size: 13px; color: var(--accent); margin-top: 8px;">立即供能</div>
+      <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">氧化成 ATP</div>
+    </div>
+    <div style="background: var(--bg2); border-radius: 10px; padding: 16px; border: 1px solid var(--border);">
+      <div style="font-size: 28px;">🏦</div>
+      <div style="font-size: 13px; color: var(--accent); margin-top: 8px;">存入糖原</div>
+      <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">肝/肌 短期储备</div>
+    </div>
+    <div style="background: var(--bg2); border-radius: 10px; padding: 16px; border: 1px dashed var(--danger);">
+      <div style="font-size: 28px;">💀</div>
+      <div style="font-size: 13px; color: var(--danger); margin-top: 8px;">DNL 倾向上升</div>
+      <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">能量过剩时贡献增加</div>
+    </div>
+  </div>
+
+  <p>
+    碳水进入体内后会在直接氧化、肝糖原、肌糖原和脂肪新生（DNL）等去向之间动态分配。
+    DNL 并不存在适用于所有人的固定“90 克开关”；当糖原储备较充足、总能量持续过剩且活动消耗较低时，DNL 的相对贡献更可能上升。
+  </p>
+  <p>
+    下面把肝糖原改成<strong>相对充盈度</strong>，并用 0–10 的倾向指数呈现结果，避免把教学模型误认为个人化检测。
+  </p>
+
+  <!-- 交互模块 1：肝糖原水位 + DNL -->
+  <div class="interactive" id="interactive-1">
+    <div class="interactive-title">▸ 肝糖原相对水位 · 燃料路由倾向</div>
+
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>葡萄糖型碳水摄入 <code>carb_glucose</code></span>
+        <span class="slider-value" id="v-cg">60 g</span>
+      </div>
+      <input type="range" min="0" max="300" value="60" id="s-cg" oninput="updateFuelRouter()">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>果糖摄入 <code>carb_fructose</code></span>
+        <span class="slider-value" id="v-cf">20 g</span>
+      </div>
+      <input type="range" min="0" max="150" value="20" id="s-cf" oninput="updateFuelRouter()">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>初始肝糖原充盈度（相对）</span>
+        <span class="slider-value" id="v-lg">60%</span>
+      </div>
+      <input type="range" min="0" max="100" value="60" id="s-lg" oninput="updateFuelRouter()">
+    </div>
+
+    <!-- 肝糖原水位可视化 -->
+    <div style="margin: 24px 0; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+      <div style="flex: 1; min-width: 200px;">
+        <div style="font-size: 12px; color: var(--text2); margin-bottom: 8px;">肝糖原相对充盈度</div>
+        <div style="position: relative; height: 180px; width: 80px; margin: 0 auto;">
+          <div style="position: absolute; bottom:0; left:0; right:0; height: 100%; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;">
+            <div id="liver-fill" style="position: absolute; bottom:0; left:0; right:0; height:60%; background: linear-gradient(180deg, #34d399, #059669); transition: all 0.5s; border-radius: 0 0 6px 6px;"></div>
+            <!-- 教学提示线：较高充盈度 -->
+            <div style="position: absolute; left:0; right:0; bottom:80%; height:2px; background: var(--warn); opacity:0.8;"></div>
+            <!-- 教学模型上限 -->
+            <div style="position: absolute; left:0; right:0; bottom:99%; height:2px; background: var(--danger); opacity:0.9;"></div>
+          </div>
+          <!-- 标注 -->
+          <div style="position: absolute; right: -64px; bottom: 80%; font-size: 10px; color: var(--warn); white-space: nowrap;">较高 80%</div>
+          <div style="position: absolute; right: -64px; bottom: 98%; font-size: 10px; color: var(--danger); white-space: nowrap;">模型上限</div>
+        </div>
+        <div style="text-align:center; margin-top: 12px; font-family: monospace; font-size: 14px;" id="liver-val">60%</div>
+      </div>
+
+      <!-- DNL 流向面板 -->
+      <div style="flex: 2; min-width: 220px;">
+        <div style="font-size: 12px; color: var(--text2); margin-bottom: 12px;">燃料去向分配</div>
+        <div id="fuel-bars"></div>
+        <div style="margin-top: 20px; padding: 14px; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-size: 11px; color: var(--text2); letter-spacing: 1px; margin-bottom: 8px;">相对机制指数</div>
+          <div id="dnl-status-badge"></div>
+          <div style="margin-top: 10px; font-size: 13px; color: var(--text2);">DNL 倾向：<span id="dnl-amount" style="color: var(--fat); font-family: monospace; font-size: 16px;">0.0</span><span class="metric-unit">/10</span></div>
+          <div style="margin-top: 6px; font-size: 13px; color: var(--text2);">尿酸生成负荷：<span id="uric-delta" style="font-family: monospace; color: var(--accent3);">0.0</span><span class="metric-unit">/10</span></div>
+          <div style="margin-top: 6px; font-size: 13px; color: var(--text2);">氧化压力倾向：<span id="ros-delta" style="font-family: monospace; color: var(--accent3);">0.0</span><span class="metric-unit">/10</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 血糖峰值指示 -->
+    <div style="margin-top: 8px;">
+      <div class="progress-bar-label">
+        <span>餐后血糖反应指数</span>
+        <span id="bg-peak-val" style="font-family:monospace; color: var(--glucose);">0.0 /10</span>
+      </div>
+      <div class="progress-track" style="height:14px; background: var(--bg3); border-radius:7px; overflow:hidden; position:relative;">
+        <div id="bg-peak-bar" style="height:100%; width:35%; background: var(--glucose); border-radius:7px; transition: all 0.5s;"></div>
+        <div style="position:absolute; top:0; bottom:0; left:52%; width:2px; background: var(--warn); opacity:0.8;"></div>
+        <div style="position:absolute; top:0; bottom:0; left:73%; width:2px; background: var(--danger); opacity:0.8;"></div>
+      </div>
+      <div style="display:flex; justify-content: space-between; font-size: 10px; color: var(--text2); margin-top: 3px;">
+        <span>低</span><span style="color:var(--warn);">中等</span><span style="color:var(--danger);">较高</span><span>10</span>
+      </div>
+    </div>
+
+    <!-- 果糖特洛伊木马说明 -->
+    <div id="fructose-warning" style="display:none; margin-top: 20px;" class="callout danger">
+      <div class="callout-title">⚠ 高量游离果糖负荷</div>
+      果糖的直接餐后血糖反应通常低于等量葡萄糖，但其主要在肝脏代谢；在高剂量、液体形式或持续能量过剩时，
+      可能提高脂肪新生、甘油三酯与尿酸生成相关负荷。完整水果与含糖饮料不能简单等同。
+    </div>
+  </div><!-- end interactive-1 -->
+
+  <!-- 交互后解释 -->
+  <div class="callout insight" style="margin-top: 32px;">
+    <div class="callout-title">💡 你刚才发现的规律</div>
+    <p style="margin:0;">糖原充盈度、摄入量、活动消耗与进餐时段会共同改变燃料路由。
+    果糖的血糖反应较低并不代表代谢负荷为零，但也不能把固定比例的果糖直接换算成脂肪克数。</p>
+  </div>
+
+  <p>
+    胰岛素会以剂量依赖方式抑制脂解，但不是统一的“开关”。
+    接下来引入空腹时长、活动和睡眠等变量，观察<strong>脂解支持指数</strong>如何连续变化。
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 场景二：24小时时间轴 · 昼夜节律                                  -->
+<!-- ============================================================ -->
+<section class="section" id="section-clock">
+  <h2>场景二：你一天的激素交响乐</h2>
+  <p class="lead">
+    你的身体不是一台恒温机器，而是一个有<strong>昼夜节律</strong>的动态系统。
+    胰岛素敏感性、皮质醇、生长激素、褪黑素——四条曲线同时起伏，
+    共同决定每一个时刻你的身体在做什么。
+  </p>
+
+  <p>
+    先看一个具体的反直觉发现：
+  </p>
+
+  <div class="insight-reveal">
+    <div class="insight-title">🔬 反直觉发现 #1</div>
+    <p style="margin:0; font-size: 16px;">
+      在受控人体实验中，生物学晚间的餐后葡萄糖反应通常高于早晨。
+      但这不等于每个人都会多合成固定比例的脂肪。
+      本模块把进餐时刻作为一个<strong style="font-size: 20px; color: var(--danger);">温和的调节因子</strong>，
+      与餐量、空腹状态、压力和睡眠共同决定相对趋势。
+    </p>
+  </div>
+
+  <!-- 交互模块 2：24小时激素曲线 -->
+  <div class="interactive" id="interactive-2">
+    <div class="interactive-title">▸ 24 小时激素时间轴 · 进餐 & 运动规划器</div>
+
+    <div class="sandbox-grid">
+      <div>
+        <div class="sandbox-section-title">进餐设置</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>进餐时刻</span><span class="slider-value" id="v-mt">8:00</span></div>
+          <input type="range" min="0" max="23" value="8" id="s-mt" oninput="update24h()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>葡萄糖摄入</span><span class="slider-value" id="v-cg2">80 g</span></div>
+          <input type="range" min="0" max="200" value="80" id="s-cg2" oninput="update24h()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>空腹时长</span><span class="slider-value" id="v-fd">12 h</span></div>
+          <input type="range" min="0" max="48" value="12" id="s-fd" oninput="update24h()">
+        </div>
+      </div>
+      <div>
+        <div class="sandbox-section-title">行为设置</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>压力水平</span><span class="slider-value" id="v-sl">3</span></div>
+          <input type="range" min="1" max="10" value="3" id="s-sl" oninput="update24h()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>入睡时刻</span><span class="slider-value" id="v-ss">23:00</span></div>
+          <input type="range" min="18" max="27" value="23" id="s-ss" oninput="update24h()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>深睡比例</span><span class="slider-value" id="v-sq">25%</span></div>
+          <input type="range" min="5" max="40" value="25" id="s-sq" oninput="update24h()">
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container" style="margin-top: 24px;">
+      <canvas id="chart-24h" height="280"></canvas>
+    </div>
+
+    <!-- 图例 -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: 12px;">
+      <span><span style="color:var(--insulin);">━</span> 胰岛素</span>
+      <span><span style="color:var(--cortisol);">━</span> 皮质醇</span>
+      <span><span style="color:var(--gh);">━</span> 生长激素</span>
+      <span><span style="color:var(--melatonin);">━</span> 褪黑素</span>
+      <span><span style="color:var(--glucose);">▌</span> 血糖峰值</span>
+    </div>
+
+    <!-- 关键指标输出 -->
+    <div class="dashboard" style="margin-top: 24px;" id="dash-24h">
+      <div class="metric-card" id="mc-dnl-time">
+        <div class="metric-name">DNL 倾向</div>
+        <div class="metric-value" id="mv-dnl-time">低</div>
+      </div>
+      <div class="metric-card" id="mc-gh">
+        <div class="metric-name">GH 脉冲强度</div>
+        <div class="metric-value" id="mv-gh">3.2<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="mc-fat-burn">
+        <div class="metric-name">夜间脂解支持</div>
+        <div class="metric-value" id="mv-fat-burn">2.1<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="mc-hsl">
+        <div class="metric-name">脂解倾向</div>
+        <div class="metric-value" id="mv-hsl">2.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="mc-melatonin">
+        <div class="metric-name">褪黑素质量</div>
+        <div class="metric-value" id="mv-melatonin">正常</div>
+      </div>
+      <div class="metric-card" id="mc-ketone">
+        <div class="metric-name">酮体生成倾向</div>
+        <div class="metric-value" id="mv-ketone">1.0<span class="metric-unit">/10</span></div>
+      </div>
+    </div>
+
+    <!-- 场景预设按钮 -->
+    <div style="margin-top: 20px;">
+      <div style="font-size: 12px; color: var(--text2); margin-bottom: 10px; letter-spacing: 1px;">快速场景对比</div>
+      <div class="scenario-buttons">
+        <button class="btn" onclick="loadScenario('optimal')">🌅 最优早餐</button>
+        <button class="btn" onclick="loadScenario('late_meal')">🌙 深夜宵夜</button>
+        <button class="btn" onclick="loadScenario('if16')">⏱ 16:8 间歇断食</button>
+        <button class="btn" onclick="loadScenario('stress')">😤 高压熬夜</button>
+      </div>
+    </div>
+
+    <div id="scenario-desc" class="callout" style="display:none; margin-top: 16px;"></div>
+  </div><!-- end interactive-2 -->
+
+  <p>
+    生长激素通常在入睡后的早期慢波睡眠阶段出现较明显脉冲，但其幅度和时序存在个体差异。
+    压力与睡眠受损可能削弱这一信号；页面展示的是相对趋势，不把它换算成真实脂肪消耗量。
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠ 模型简化说明</div>
+    图表中的数值是相对趋势，非临床精度。真实的激素分泌是脉冲式的，
+    模型用平滑曲线近似。用于理解机制方向，不用于预测具体数字。
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 反直觉发现 #2：果糖悖论                                          -->
+<!-- ============================================================ -->
+<section class="section" id="section-fructose">
+  <h2>反直觉发现 #2：低血糖反应 ≠ 零代谢负荷</h2>
+
+  <p class="lead">
+    果糖的直接餐后血糖反应通常低于等量葡萄糖，但这不能单独代表其全部代谢效应。
+  </p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 32px 0;" id="fructose-compare">
+    <div style="background: var(--bg2); border-radius: 12px; padding: 20px; border: 1px solid var(--border);">
+      <div style="color: var(--glucose); font-size: 13px; letter-spacing: 1px; margin-bottom: 12px;">葡萄糖 80g · 教学对比</div>
+      <div style="font-size: 13px; color: var(--text2); line-height: 2;">
+        直接血糖反应：<span style="color:var(--text); font-family:monospace;">较高</span><br>
+        胰岛素需求：<span style="color:var(--text); font-family:monospace;">较高</span><br>
+        肝脏底物负荷：<span style="color:var(--text); font-family:monospace;">中等</span><br>
+        DNL 倾向：<span style="color:var(--text); font-family:monospace;">取决于总能量与糖原状态</span><br>
+        尿酸生成负荷：<span style="color:var(--text); font-family:monospace;">较低</span>
+      </div>
+    </div>
+    <div style="background: var(--bg2); border-radius: 12px; padding: 20px; border: 1px dashed var(--danger);">
+      <div style="color: var(--danger); font-size: 13px; letter-spacing: 1px; margin-bottom: 12px;">果糖 80g · 高剂量情境</div>
+      <div style="font-size: 13px; color: var(--text2); line-height: 2;">
+        直接血糖反应：<span style="color:var(--accent); font-family:monospace;">通常较低</span><br>
+        直接胰岛素反应：<span style="color:var(--accent); font-family:monospace;">通常较低</span><br>
+        肝脏底物负荷：<span style="color:var(--danger); font-family:monospace;">较高</span><br>
+        DNL 倾向：<span style="color:var(--danger); font-family:monospace;">能量过剩时可升高</span><br>
+        尿酸生成负荷：<span style="color:var(--danger); font-family:monospace;">可短暂升高</span>
+      </div>
+    </div>
+  </div>
+
+  <p>
+    人体示踪研究显示，摄入果糖可被氧化，也可转化为葡萄糖、乳酸和糖原；直接进入循环甘油三酯的比例并不是固定的 50%。
+    因此，本项目只保留“肝脏底物与尿酸生成负荷可能增加”的方向性，不再输出确定脂肪克数。
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 场景三：mTOR / 自噬跷跷板                                        -->
+<!-- ============================================================ -->
+<section class="section" id="section-seesaw">
+  <h2>场景三：合成信号 vs 清理信号——跷跷板</h2>
+  <p class="lead">
+    <strong>mTOR</strong> 参与营养感知与合成信号，<strong>AMPK</strong> 参与能量压力感知，并可影响自噬相关通路。
+    它们并非简单的二选一开关；这里用跷跷板展示相对偏向。
+  </p>
+
+  <p>
+    它们不能同时全力运转——这是进化留下来的能量分配逻辑：
+    资源充足时建造，资源匮乏时清理。
+  </p>
+
+  <!-- 交互模块 3：跷跷板 -->
+  <div class="interactive" id="interactive-3">
+    <div class="interactive-title">▸ mTOR / 自噬 跷跷板</div>
+
+    <div class="sandbox-grid">
+      <div>
+        <div class="sandbox-section-title">合成信号（mTOR 驱动）</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>蛋白质摄入</span><span class="slider-value" id="v-pro">60 g</span></div>
+          <input type="range" min="0" max="250" value="60" id="s-pro" oninput="updateSeesaw()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>血胰岛素水平</span><span class="slider-value" id="v-ins">5 μU/mL</span></div>
+          <input type="range" min="1" max="60" value="5" id="s-ins" oninput="updateSeesaw()">
+        </div>
+      </div>
+      <div>
+        <div class="sandbox-section-title">清理信号（AMPK 驱动）</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>空腹时长</span><span class="slider-value" id="v-fd2">12 h</span></div>
+          <input type="range" min="0" max="72" value="12" id="s-fd2" oninput="updateSeesaw()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>运动强度 × 时长</span><span class="slider-value" id="v-ex">30 AU</span></div>
+          <input type="range" min="0" max="120" value="30" id="s-ex" oninput="updateSeesaw()">
+        </div>
+      </div>
+    </div>
+
+    <!-- 跷跷板动画 -->
+    <div id="seesaw-container" style="margin: 32px 0;">
+      <canvas id="seesaw-canvas" height="160" style="background: transparent; display:block; margin: 0 auto;"></canvas>
+    </div>
+
+    <!-- 指标 -->
+    <div class="dashboard" id="dash-seesaw">
+      <div class="metric-card" id="mc-mtor">
+        <div class="metric-name">mTOR 强度</div>
+        <div class="metric-value" id="mv-mtor">3.2<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="mc-ampk">
+        <div class="metric-name">AMPK 强度</div>
+        <div class="metric-value" id="mv-ampk">3.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="mc-auto">
+        <div class="metric-name">自噬相关信号</div>
+        <div class="metric-value" id="mv-auto">2.1<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="mc-debris">
+        <div class="metric-name">清理压力指数</div>
+        <div class="metric-value" id="mv-debris">10<span class="metric-unit">/100</span></div>
+      </div>
+      <div class="metric-card" id="mc-state-label" style="grid-column: span 2;">
+        <div class="metric-name">当前状态</div>
+        <div class="metric-value" style="font-size: 16px;" id="mv-state-label">⚖ 平衡维护</div>
+      </div>
+    </div>
+
+    <!-- IGF-1 风险提示 -->
+    <div id="mtor-warn" class="callout warn" style="display:none; margin-top:16px;">
+      <div class="callout-title">⚠ 长期高 mTOR 风险</div>
+      当前参数让合成信号长期占优。这个提示只描述模型偏向，不预测疾病风险，也不意味着蛋白质本身有害。
+    </div>
+  </div><!-- end interactive-3 -->
+
+  <p>
+    页面使用归一化的教学公式，把蛋白质、胰岛素、空腹和运动映射到 0–10 分。
+    这些分数不是人体自噬通量测量；不同组织、训练状态和空腹时长的反应可能不同。
+  </p>
+
+  <div class="callout insight">
+    <div class="callout-title">💡 最优策略的窗口</div>
+    <p style="margin:0;">
+      <strong>时序分离</strong>是一个有用的理解框架：运动与较长餐间隔可提高能量压力相关信号，
+      进食蛋白质则提高合成信号。但人体自噬没有公认的“14–18 小时启动时钟”，
+      本模型不提供断食处方。
+    </p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 模型规则解释                                                    -->
+<!-- ============================================================ -->
+<section class="section" id="section-model">
+  <h2>这台机器的五条规则</h2>
+  <p>这些规则用于展示机制方向，不是个人诊断阈值：</p>
+
+  <div style="margin: 32px 0; display: flex; flex-direction: column; gap: 16px;">
+    <div style="background:var(--bg2); border-radius:10px; padding:20px 24px; border-left: 3px solid var(--glucose);">
+      <div style="color:var(--glucose); font-size:12px; letter-spacing:2px; margin-bottom:8px;">规则 1 · 糖原状态会改变燃料路由</div>
+      <p style="margin:0; font-size:14px;">糖原较低时，摄入碳水更可能补充糖原并被氧化；糖原较高且持续能量过剩时，DNL 倾向可能上升。不存在统一的 90g 开关。</p>
+    </div>
+    <div style="background:var(--bg2); border-radius:10px; padding:20px 24px; border-left: 3px solid var(--danger);">
+      <div style="color:var(--danger); font-size:12px; letter-spacing:2px; margin-bottom:8px;">规则 2 · 果糖的血糖反应不能代表全部代谢</div>
+      <p style="margin:0; font-size:14px;">果糖的直接血糖和胰岛素反应通常较低，但高量游离果糖会增加肝脏底物及尿酸生成负荷；其去向包括氧化、葡萄糖、乳酸、糖原和脂质，并非固定 50% 转脂。</p>
+    </div>
+    <div style="background:var(--bg2); border-radius:10px; padding:20px 24px; border-left: 3px solid var(--insulin);">
+      <div style="color:var(--insulin); font-size:12px; letter-spacing:2px; margin-bottom:8px;">规则 3 · 胰岛素连续抑制脂解</div>
+      <p style="margin:0; font-size:14px;">胰岛素对脂解的抑制是剂量依赖且因人、因组织而异，不是低于 3.0 μU/mL 才突然“解锁”。本模型用连续脂解支持指数表达。</p>
+    </div>
+    <div style="background:var(--bg2); border-radius:10px; padding:20px 24px; border-left: 3px solid var(--cortisol);">
+      <div style="color:var(--cortisol); font-size:12px; letter-spacing:2px; margin-bottom:8px;">规则 4 · 昼夜节律是温和调节因子</div>
+      <p style="margin:0; font-size:14px;">健康人群的葡萄糖耐量通常在晚间较低，但实际差异受睡眠、昼夜类型、进餐组成与个体敏感性影响，不能固定换算为 DNL 克数。</p>
+    </div>
+    <div style="background:var(--bg2); border-radius:10px; padding:20px 24px; border-left: 3px solid var(--gh);">
+      <div style="color:var(--gh); font-size:12px; letter-spacing:2px; margin-bottom:8px;">规则 5 · 睡眠影响激素与底物利用环境</div>
+      <p style="margin:0; font-size:14px;">入睡后的慢波睡眠常伴随 GH 脉冲，压力和睡眠受损可能改变相关信号；这不等于每晚存在固定克数的“脂肪焚烧窗口”。</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+<!-- ============================================================ -->
+<!-- Sandbox 自由探索区                                              -->
+<!-- ============================================================ -->
+<section class="section" id="section-sandbox">
+  <h2>Sandbox：自由探索</h2>
+  <p class="lead">
+    所有参数全部开放。构建你自己的一天，看看代谢引擎给出什么结果。
+  </p>
+
+  <div class="interactive" id="interactive-sandbox">
+    <div class="interactive-title">▸ 完整代谢状态模拟器</div>
+
+    <!-- 参数分组 -->
+    <div class="sandbox-input-grid">
+
+      <!-- 饮食 -->
+      <div>
+        <div class="sandbox-section-title">🍽 饮食输入</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>葡萄糖碳水</span><span class="slider-value" id="sb-v-cg">60 g</span></div>
+          <input type="range" min="0" max="400" value="60" id="sb-cg" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>果糖碳水</span><span class="slider-value" id="sb-v-cf">20 g</span></div>
+          <input type="range" min="0" max="200" value="20" id="sb-cf" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>膳食脂肪</span><span class="slider-value" id="sb-v-fat">40 g</span></div>
+          <input type="range" min="0" max="200" value="40" id="sb-fat" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>蛋白质</span><span class="slider-value" id="sb-v-pro">60 g</span></div>
+          <input type="range" min="0" max="300" value="60" id="sb-pro" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>进餐时刻</span><span class="slider-value" id="sb-v-mt">8:00</span></div>
+          <input type="range" min="0" max="23" value="8" id="sb-mt" oninput="updateSandbox()">
+        </div>
+      </div>
+
+      <!-- 行为 -->
+      <div>
+        <div class="sandbox-section-title">🏃 行为输入</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>空腹时长</span><span class="slider-value" id="sb-v-fd">12 h</span></div>
+          <input type="range" min="0" max="72" value="12" id="sb-fd" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>运动强度</span><span class="slider-value" id="sb-v-ei">3</span></div>
+          <input type="range" min="0" max="10" value="3" id="sb-ei" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>运动时长</span><span class="slider-value" id="sb-v-ed">30 min</span></div>
+          <input type="range" min="0" max="180" value="30" id="sb-ed" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>压力水平</span><span class="slider-value" id="sb-v-sl">3</span></div>
+          <input type="range" min="1" max="10" value="3" id="sb-sl" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>运动类型</span><span class="slider-value" id="sb-v-et" style="font-size:12px;">有氧</span></div>
+          <input type="range" min="0" max="2" value="1" id="sb-et" step="1" oninput="updateSandbox()">
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text2); margin-top:2px;">
+            <span>无</span><span>有氧</span><span>无氧</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 身体 & 睡眠 -->
+      <div>
+        <div class="sandbox-section-title">💤 睡眠 & 身体</div>
+        <div class="slider-group">
+          <div class="slider-label"><span>睡眠时长</span><span class="slider-value" id="sb-v-sdur">8 h</span></div>
+          <input type="range" min="3" max="10" value="8" id="sb-sdur" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>深睡比例</span><span class="slider-value" id="sb-v-sq">25%</span></div>
+          <input type="range" min="5" max="40" value="25" id="sb-sq" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>入睡时刻</span><span class="slider-value" id="sb-v-ss">23:00</span></div>
+          <input type="range" min="18" max="27" value="23" id="sb-ss" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>体脂率（模型修正项）</span><span class="slider-value" id="sb-v-bf">20%</span></div>
+          <input type="range" min="5" max="50" value="20" id="sb-bf" oninput="updateSandbox()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label"><span>胰岛素敏感性</span><span class="slider-value" id="sb-v-is">1.0</span></div>
+          <input type="range" min="2" max="15" value="10" id="sb-is" oninput="updateSandbox()">
+        </div>
+      </div>
+    </div>
+
+    <!-- 综合仪表盘 -->
+    <div style="font-size: 12px; color: var(--text2); letter-spacing: 1px; margin-bottom: 12px;">综合代谢指标</div>
+    <div class="dashboard" id="sb-dashboard">
+      <div class="metric-card" id="sb-mc-bg">
+        <div class="metric-name">血糖反应</div>
+        <div class="metric-value" id="sb-mv-bg">3.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-ins">
+        <div class="metric-name">胰岛素需求</div>
+        <div class="metric-value" id="sb-mv-ins">3.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-dnl">
+        <div class="metric-name">DNL 倾向</div>
+        <div class="metric-value" id="sb-mv-dnl">1.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-hsl">
+        <div class="metric-name">脂解支持</div>
+        <div class="metric-value" id="sb-mv-hsl">3.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-ketone">
+        <div class="metric-name">酮体生成倾向</div>
+        <div class="metric-value" id="sb-mv-ketone">1.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-gh">
+        <div class="metric-name">GH 脉冲</div>
+        <div class="metric-value" id="sb-mv-gh">3.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-auto">
+        <div class="metric-name">自噬相关信号</div>
+        <div class="metric-value" id="sb-mv-auto">2.0<span class="metric-unit">/10</span></div>
+      </div>
+      <div class="metric-card" id="sb-mc-ua">
+        <div class="metric-name">尿酸生成负荷</div>
+        <div class="metric-value" id="sb-mv-ua">1.0<span class="metric-unit">/10</span></div>
+      </div>
+    </div>
+
+    <!-- 综合评分 -->
+    <div style="margin-top: 28px; background: var(--bg3); border-radius: 12px; padding: 20px 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="font-size: 13px; color: var(--text2); letter-spacing: 1px;">本模型情境评分</div>
+        <div id="sb-score-badge"></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div id="sb-score-val" style="font-size: 48px; font-family: monospace; font-weight: bold; color: var(--accent); min-width: 80px;">85</div>
+        <div style="flex: 1;">
+          <div class="progress-track" style="height: 10px; background: var(--bg2); border-radius: 5px; overflow: hidden;">
+            <div id="sb-score-bar" style="height: 100%; width: 85%; background: linear-gradient(90deg, var(--danger), var(--warn), var(--accent)); border-radius: 5px; transition: width 0.5s;"></div>
+          </div>
+          <div id="sb-score-breakdown" style="font-size: 12px; color: var(--text2); margin-top: 10px; line-height: 2;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 燃料构成比 -->
+    <div style="margin-top: 20px;">
+      <div style="font-size: 12px; color: var(--text2); letter-spacing: 1px; margin-bottom: 10px;">当前燃料使用倾向</div>
+      <div style="display: flex; height: 24px; border-radius: 6px; overflow: hidden; gap: 2px;" id="fuel-mix-bar">
+        <div id="fuel-glucose" style="background: var(--glucose); transition: flex 0.5s; display:flex; align-items:center; justify-content:center; font-size:11px; color:#000; font-weight:bold;"></div>
+        <div id="fuel-fat"     style="background: var(--fat);     transition: flex 0.5s; display:flex; align-items:center; justify-content:center; font-size:11px; color:#000; font-weight:bold;"></div>
+        <div id="fuel-ketone" style="background: var(--melatonin);transition: flex 0.5s; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; font-weight:bold;"></div>
+      </div>
+      <div style="display:flex; gap:16px; margin-top:6px; font-size:11px; color:var(--text2);">
+        <span><span style="color:var(--glucose);">■</span> 葡萄糖</span>
+        <span><span style="color:var(--fat);">■</span> 脂肪</span>
+        <span><span style="color:var(--melatonin);">■</span> 酮体</span>
+      </div>
+    </div>
+
+    <!-- 智能建议 -->
+    <div id="sb-advice" style="margin-top: 24px;"></div>
+
+  </div><!-- end sandbox -->
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- 总结                                                          -->
+<!-- ============================================================ -->
+<section class="section" id="section-summary">
+  <h2>你今天学到了什么</h2>
+  <p>把这台机制沙盘关掉之前，梳理一下核心图景：</p>
+
+  <div style="margin: 32px 0; display: flex; flex-direction: column; gap: 12px;">
+    <div style="display:flex; gap:16px; align-items:flex-start; padding: 16px; background:var(--bg2); border-radius:10px;">
+      <div style="font-size:24px; flex-shrink:0;">🏦</div>
+      <div><strong>糖原状态会改变燃料分配。</strong> 糖原较低时更利于补充与氧化；糖原充足且持续能量过剩时，DNL 倾向可能上升，但没有统一的克数开关。</div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:flex-start; padding: 16px; background:var(--bg2); border-radius:10px;">
+      <div style="font-size:24px; flex-shrink:0;">🍹</div>
+      <div><strong>低血糖反应不等于零负荷。</strong> 高量游离果糖可增加肝脏底物和尿酸生成负荷，但其代谢去向多样，不能按固定比例直接换算成脂肪。</div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:flex-start; padding: 16px; background:var(--bg2); border-radius:10px;">
+      <div style="font-size:24px; flex-shrink:0;">⏰</div>
+      <div><strong>时间会调节餐后反应。</strong> 晚间葡萄糖耐量通常较低，但时间只是众多变量之一，个体差异和餐食组成同样重要。</div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:flex-start; padding: 16px; background:var(--bg2); border-radius:10px;">
+      <div style="font-size:24px; flex-shrink:0;">📉</div>
+      <div><strong>脂解是连续变化。</strong> 胰岛素、空腹、活动和能量状态共同影响脂解，不存在人人通用的 3.0 μU/mL“解锁线”。</div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:flex-start; padding: 16px; background:var(--bg2); border-radius:10px;">
+      <div style="font-size:24px; flex-shrink:0;">🌙</div>
+      <div><strong>睡眠塑造代谢环境。</strong> 睡眠质量、时长和压力会影响激素节律与底物利用，但不能据此预测每晚燃烧多少克脂肪。</div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:flex-start; padding: 16px; background:var(--bg2); border-radius:10px;">
+      <div style="font-size:24px; flex-shrink:0;">⚖️</div>
+      <div><strong>mTOR、AMPK 与自噬是网络，不是按钮。</strong> 页面分数只表示相对信号偏向，不等于人体组织中的真实通量。</div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 32px;">
+    <div class="callout-title">📌 模型的边界</div>
+    <p style="margin:0; font-size:14px;">
+      本模型忽略了年龄、性别、药物、疾病、食物基质、GI/GL、肠道吸收、肝肾功能、遗传差异等重要因素。
+      所有 0–10 指数均为内部归一化结果，只适合比较同一模型内参数改变后的方向，不能跨人比较，也不能替代连续血糖监测或实验室检查。
+    </p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section" id="section-evidence">
+  <h2>证据与模型边界</h2>
+  <p class="lead">修复版将文献结论与模型假设分开：文献支持方向，公式负责可视化，不把二者混为临床预测。</p>
+  <ul class="evidence-list">
+    <li><a href="https://pubmed.ncbi.nlm.nih.gov/3165600/" target="_blank" rel="noopener">Acheson 等：大量碳水过量、糖原储存与 DNL</a>——提示 DNL 与持续显著能量过剩有关，而不是单餐越过统一阈值。</li>
+    <li><a href="https://pubmed.ncbi.nlm.nih.gov/8675642/" target="_blank" rel="noopener">Schwarz 等：短期碳水摄入改变 DNL、脂解与燃料选择</a>——支持用相对趋势表达，而非固定脂肪克数。</li>
+    <li><a href="https://pubmed.ncbi.nlm.nih.gov/25870289/" target="_blank" rel="noopener">Morris 等：昼夜系统与昼夜错位影响葡萄糖耐量</a>——支持晚间反应较差的方向，但不支持固定“1.6 倍脂肪合成”。</li>
+    <li><a href="https://pubmed.ncbi.nlm.nih.gov/11061533/" target="_blank" rel="noopener">Jensen 等：胰岛素以剂量依赖方式抑制不同组织的脂解</a>——支持连续指数，不支持统一开关阈值。</li>
+    <li><a href="https://pubmed.ncbi.nlm.nih.gov/27329612/" target="_blank" rel="noopener">Carran 等：含糖饮料/果糖对血尿酸的急性影响</a>——支持短暂上升趋势，但个体差异明显，不能线性推算个人 μmol/L。</li>
+    <li><a href="https://pubmed.ncbi.nlm.nih.gov/30161009/" target="_blank" rel="noopener">Møller 等：36 小时空腹与人体骨骼肌自噬标志物</a>——人体反应有限且受训练状态影响，不存在已证实的统一“14–18 小时启动点”。</li>
+  </ul>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================ -->
+<!-- Anki 卡片生成区                                                -->
+<!-- ============================================================ -->
+<section id="anki-section">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; flex-wrap:wrap; gap:12px;">
+    <div>
+      <div style="font-size:11px; letter-spacing:2px; color:var(--accent); margin-bottom:6px;">ANKI EXPORT</div>
+      <h2 style="margin:0; font-size:22px;">知识点卡片</h2>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" onclick="selectAllAnki()">全选</button>
+      <button class="btn" onclick="deselectAllAnki()">取消全选</button>
+      <button class="btn btn-primary" onclick="exportAnki()">⬇ 导出 Anki (.txt)</button>
+    </div>
+  </div>
+  <p style="font-size:14px; color:var(--text2); margin-bottom: 24px;">
+    点击卡片查看答案。勾选想要的卡片，然后导出为 Anki 可导入的 txt 格式（制表符分隔）。
+    在 Anki 中选择「文件 → 导入」，分隔符选「制表符」即可。
+  </p>
+
+  <div id="anki-cards-container"></div>
+
+  <div style="margin-top: 20px; padding: 16px; background: var(--bg3); border-radius: 8px; font-size: 13px; color: var(--text2);">
+    已选择 <span id="anki-selected-count" style="color:var(--accent); font-family:monospace; font-weight:bold;">0</span> 张卡片
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>代谢引擎 · Explorable Explanation</p>
+  <p style="margin-top:8px; font-size:12px;">教育用途的机制沙盘。所有分数均为内部相对指数，非化验值、非临床预测、非医疗建议。</p>
+</footer>
+
+<!-- ============================================================ -->
+<!-- JavaScript                                                    -->
+<!-- ============================================================ -->
+<script>
+// ============================================================
+// 粒子背景
+// ============================================================
+(function() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 0.5, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
+      color: ['#6ee7b7','#818cf8','#f472b6','#38bdf8'][Math.floor(Math.random()*4)]
+    });
+  }
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p => {
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = p.color; ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ============================================================
+// 进度条
+// ============================================================
+window.addEventListener('scroll', () => {
+  const el = document.getElementById('progress-bar');
+  const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+  el.style.width = pct + '%';
+});
+
+// ============================================================
+// 开场问题动画
+// ============================================================
+const qLines = document.querySelectorAll('.q-line');
+const qObs = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting) {
+    qLines.forEach((l,i) => setTimeout(() => l.classList.add('visible'), i * 300));
+    qObs.disconnect();
+  }
+}, { threshold: 0.3 });
+qObs.observe(document.getElementById('q-block'));
+
+// ============================================================
+// 选择题逻辑
+// ============================================================
+function checkQuiz(el, quizId) {
+  const opts = document.querySelectorAll(`#${quizId} .quiz-option`);
+  opts.forEach(o => o.style.pointerEvents = 'none');
+  const isCorrect = el.dataset.correct === 'true';
+  el.classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) {
+    opts.forEach(o => { if (o.dataset.correct === 'true') o.classList.add('correct'); });
+  }
+  const fb = document.getElementById(`${quizId}-feedback`);
+  fb.className = 'quiz-feedback show';
+  fb.style.background = isCorrect ? 'rgba(110,231,183,0.08)' : 'rgba(248,113,113,0.08)';
+  fb.style.color = isCorrect ? 'var(--accent)' : 'var(--danger)';
+  fb.style.border = `1px solid ${isCorrect ? 'var(--accent)' : 'var(--danger)'}`;
+  fb.style.borderRadius = '8px';
+  fb.textContent = isCorrect
+    ? '✓ 正确。晚间葡萄糖耐量通常较低，但不能据此计算固定脂肪克数。'
+    : '✗ 这个说法过于绝对。更稳妥的结论是：晚间反应通常较差，但个体差异很大。';
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function smoothstep(edge0, edge1, x) {
+  const t = clamp((x - edge0) / Math.max(edge1 - edge0, 1e-9), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+function getCircadianIS(hour) {
+  // 教学用温和调节：清晨/上午约 1.0，深夜约 0.82；不是个人实测值。
+  const h = ((hour % 24) + 24) % 24;
+  const phase = Math.cos((h - 8) / 24 * Math.PI * 2);
+  return clamp(0.91 + 0.09 * phase, 0.82, 1.00);
+}
+function getCortisolBase(hour) {
+  if (hour >= 5 && hour < 9) return 7.5;
+  if (hour >= 9 && hour < 14) return 5.5;
+  if (hour >= 14 && hour < 20) return 3.5;
+  return 2.0;
+}
+function getMelatonin(hour) {
+  const h = ((hour % 24) + 24) % 24;
+  const night = Math.cos((h - 2) / 24 * Math.PI * 2);
+  return clamp((night + 1) * 5, 0, 10);
+}
+function fmtHour(h) { return `${((h % 24) + 24) % 24}:00`; }
+function setMetricCard(id, val, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'metric-card ' + (cls || '');
+}
+function classifyIndex(v) {
+  return v >= 7 ? 'alert' : v >= 4 ? 'warn' : 'good';
+}
+function calcMealSignals({
+  glucose = 0,
+  fructose = 0,
+  glycogenPct = 60,
+  mealHour = 12,
+  insulinSensitivity = 1,
+  dietaryFat = 0,
+  exerciseGlycogen = 0
+}) {
+  const circadian = getCircadianIS(mealHour);
+  const bodyIS = clamp(insulinSensitivity, 0.3, 1.5);
+  const effectiveIS = clamp(bodyIS * circadian, 0.25, 1.5);
+
+  const slowedGlucose = glucose * (1 - clamp(dietaryFat / 300, 0, 0.18));
+  const glucoseResponse = clamp((slowedGlucose / 110) * 6 / effectiveIS, 0, 10);
+  const insulinDemand = clamp(glucoseResponse * 0.78 / effectiveIS + fructose / 200, 0, 10);
+
+  const adjustedGlycogen = clamp(glycogenPct - exerciseGlycogen / 4, 0, 100);
+  const glycogenRoom = 1 - adjustedGlycogen / 100;
+  const carbBuffer = 35 + glycogenRoom * 150 + exerciseGlycogen * 0.35;
+  const glucoseSurplus = smoothstep(carbBuffer, carbBuffer + 180, glucose);
+  const fructoseLoad = smoothstep(20, 120, fructose);
+  const energyPressure = smoothstep(80, 320, glucose + fructose + dietaryFat * 1.4);
+  const latePenalty = (1 - circadian) / 0.18;
+
+  const dnlIndex = clamp(
+    glucoseSurplus * 4.5 + fructoseLoad * 2.5 + energyPressure * 1.8 + latePenalty * 0.8,
+    0, 10
+  );
+  const uricLoad = clamp(fructoseLoad * 7 + energyPressure * 0.8, 0, 10);
+  const oxidativeLoad = clamp(fructoseLoad * 4 + dnlIndex * 0.35, 0, 10);
+  const glycogenGainPct = clamp(glucose * 0.16 * glycogenRoom, 0, 100 - adjustedGlycogen);
+  const glycogenFinalPct = clamp(adjustedGlycogen + glycogenGainPct, 0, 100);
+
+  return {
+    circadian, effectiveIS, glucoseResponse, insulinDemand,
+    dnlIndex, uricLoad, oxidativeLoad, glycogenFinalPct,
+    glycogenRoom
+  };
+}
+function calcLipolysisSupport({ fastingHours = 10, insulinDemand = 3, exerciseLoad = 0, bodyFat = 0.2 }) {
+  const fastingSignal = smoothstep(6, 24, fastingHours) * 6;
+  const exerciseSignal = clamp(exerciseLoad / 180 * 2.5, 0, 2.5);
+  const insulinSuppression = clamp(insulinDemand / 10 * 6, 0, 6);
+  const bodyFatAdjustment = clamp((bodyFat - 0.2) * 3, -0.5, 1.2);
+  return clamp(2 + fastingSignal + exerciseSignal - insulinSuppression - bodyFatAdjustment, 0, 10);
+}
+function calcKetoneTendency(fastingHours, exerciseLoad = 0) {
+  return clamp(0.8 + smoothstep(10, 36, fastingHours) * 7 + clamp(exerciseLoad / 240, 0, 1.5), 0, 10);
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// 模块 1：燃料路由器
+// ============================================================
+function updateFuelRouter() {
+  const cg = +document.getElementById('s-cg').value;
+  const cf = +document.getElementById('s-cf').value;
+  const glycogenPct = +document.getElementById('s-lg').value;
+
+  document.getElementById('v-cg').textContent = cg + ' g';
+  document.getElementById('v-cf').textContent = cf + ' g';
+  document.getElementById('v-lg').textContent = glycogenPct + '%';
+
+  const signals = calcMealSignals({
+    glucose: cg,
+    fructose: cf,
+    glycogenPct,
+    mealHour: 12,
+    insulinSensitivity: 1
+  });
+
+  const lvPct = signals.glycogenFinalPct;
+  const fill = document.getElementById('liver-fill');
+  fill.style.height = lvPct + '%';
+  fill.style.background =
+    lvPct > 90 ? 'linear-gradient(180deg,#f87171,#dc2626)' :
+    lvPct > 75 ? 'linear-gradient(180deg,#fb923c,#ea580c)' :
+    'linear-gradient(180deg,#34d399,#059669)';
+  document.getElementById('liver-val').textContent = lvPct.toFixed(0) + '%';
+
+  const oxidationWeight = 4.5 + cg / 120 + cf / 160;
+  const glycogenWeight = 1 + signals.glycogenRoom * 4;
+  const dnlWeight = 0.4 + signals.dnlIndex * 0.75;
+  const otherWeight = 1 + cf / 80;
+  const weights = [oxidationWeight, glycogenWeight, dnlWeight, otherWeight];
+  const weightSum = weights.reduce((a, b) => a + b, 0);
+  const items = [
+    { label: '→ 直接氧化', val: weights[0] / weightSum * 100, color: '#34d399' },
+    { label: '→ 糖原补充', val: weights[1] / weightSum * 100, color: '#818cf8' },
+    { label: '→ DNL 路径倾向', val: weights[2] / weightSum * 100, color: '#f87171' },
+    { label: '→ 乳酸/其他中间产物', val: weights[3] / weightSum * 100, color: '#fb923c' },
+  ];
+
+  const bars = document.getElementById('fuel-bars');
+  bars.innerHTML = '';
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.style.margin = '6px 0';
+    row.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:3px;">
+        <span>${item.label}</span>
+        <span style="color:${item.color};font-family:monospace;">${item.val.toFixed(0)}%</span>
+      </div>
+      <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${item.val.toFixed(1)}%;background:${item.color};border-radius:4px;"></div>
+      </div>`;
+    bars.appendChild(row);
+  });
+
+  const badge = document.getElementById('dnl-status-badge');
+  const dnlClass = signals.dnlIndex >= 7 ? 'badge-red' : signals.dnlIndex >= 4 ? 'badge-orange' : 'badge-green';
+  const dnlLabel = signals.dnlIndex >= 7 ? '较高' : signals.dnlIndex >= 4 ? '中等' : '较低';
+  badge.innerHTML = `<span class="badge ${dnlClass}">DNL 倾向 ${dnlLabel}</span>`;
+  document.getElementById('dnl-amount').textContent = signals.dnlIndex.toFixed(1);
+  document.getElementById('uric-delta').textContent = signals.uricLoad.toFixed(1);
+  document.getElementById('ros-delta').textContent = signals.oxidativeLoad.toFixed(1);
+
+  const bgPct = signals.glucoseResponse * 10;
+  const bgBar = document.getElementById('bg-peak-bar');
+  bgBar.style.width = bgPct + '%';
+  bgBar.style.background = signals.glucoseResponse >= 7 ? 'var(--danger)' : signals.glucoseResponse >= 4 ? 'var(--warn)' : 'var(--glucose)';
+  const bgVal = document.getElementById('bg-peak-val');
+  bgVal.textContent = signals.glucoseResponse.toFixed(1) + ' /10';
+  bgVal.style.color = signals.glucoseResponse >= 7 ? 'var(--danger)' : signals.glucoseResponse >= 4 ? 'var(--warn)' : 'var(--glucose)';
+
+  document.getElementById('fructose-warning').style.display = cf > 40 ? 'block' : 'none';
+}
+
+// 初始化模块1
+updateFuelRouter();
+
+// ============================================================
+// 模块 2：24小时激素时间轴
+// ============================================================
+let chart24h = null;
+
+function update24h() {
+  const mealHour = +document.getElementById('s-mt').value;
+  const cg = +document.getElementById('s-cg2').value;
+  const fastDur = +document.getElementById('s-fd').value;
+  const stress = +document.getElementById('s-sl').value;
+  const sleepStart = +document.getElementById('s-ss').value % 24;
+  const sleepQuality = +document.getElementById('s-sq').value / 100;
+
+  document.getElementById('v-mt').textContent = fmtHour(mealHour);
+  document.getElementById('v-cg2').textContent = cg + ' g';
+  document.getElementById('v-fd').textContent = fastDur + ' h';
+  document.getElementById('v-sl').textContent = stress;
+  document.getElementById('v-ss').textContent = fmtHour(sleepStart);
+  document.getElementById('v-sq').textContent = Math.round(sleepQuality * 100) + '%';
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const mealSignals = calcMealSignals({
+    glucose: cg,
+    fructose: 0,
+    glycogenPct: clamp(70 - fastDur * 0.8, 30, 85),
+    mealHour,
+    insulinSensitivity: 1
+  });
+
+  const insulinData = hours.map(h => {
+    const dt = (h - mealHour + 24) % 24;
+    const basal = clamp(4.5 - smoothstep(8, 24, fastDur) * 2.5, 1.2, 4.5);
+    const pulse = dt <= 4 ? mealSignals.insulinDemand * Math.exp(-dt * 0.9) : 0;
+    return clamp(basal + pulse, 0, 10);
+  });
+
+  const cortisolData = hours.map(h => clamp(getCortisolBase(h) + (stress - 3) * 0.45, 0, 10));
+  const melatoninData = hours.map(h => {
+    let mel = getMelatonin(h);
+    if (cortisolData[h] > 6) mel *= 0.7;
+    return clamp(mel, 0, 10);
+  });
+
+  const deepHours = 8 * sleepQuality;
+  const sleepCortisol = cortisolData[sleepStart];
+  const ghPulse = clamp(deepHours * 2.2 * (1 - sleepCortisol / 13), 0, 10);
+  const ghData = hours.map(h => {
+    const dt = (h - sleepStart + 24) % 24;
+    if (dt >= 0.7 && dt <= 3.5) return clamp(ghPulse * Math.exp(-Math.pow(dt - 1.7, 2)), 0, 10);
+    return 0.2;
+  });
+
+  const bgBar = hours.map(h => {
+    const dt = (h - mealHour + 24) % 24;
+    return dt <= 3 ? mealSignals.glucoseResponse * Math.exp(-dt * 1.1) : 0;
+  });
+
+  const canvas = document.getElementById('chart-24h');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 700;
+  const H = 280;
+  canvas.width = W;
+  canvas.height = H;
+  const PAD = { top: 20, right: 20, bottom: 30, left: 40 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top - PAD.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#232738';
+  ctx.fillRect(0, 0, W, H);
+
+  const sleepEndHour = (sleepStart + 8) % 24;
+  ctx.fillStyle = 'rgba(56,189,248,0.06)';
+  const sx1 = PAD.left + (sleepStart / 24) * plotW;
+  const sx2 = PAD.left + (sleepEndHour / 24) * plotW;
+  if (sx2 > sx1) ctx.fillRect(sx1, PAD.top, sx2 - sx1, plotH);
+  else {
+    ctx.fillRect(sx1, PAD.top, PAD.left + plotW - sx1, plotH);
+    ctx.fillRect(PAD.left, PAD.top, sx2 - PAD.left, plotH);
+  }
+
+  const mealX = PAD.left + (mealHour / 24) * plotW;
+  ctx.strokeStyle = 'rgba(110,231,183,0.4)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(mealX, PAD.top); ctx.lineTo(mealX, PAD.top + plotH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#6ee7b7';
+  ctx.font = '10px monospace';
+  ctx.fillText('餐 ' + fmtHour(mealHour), mealX + 4, PAD.top + 12);
+
+  ctx.strokeStyle = 'rgba(45,50,72,0.8)';
+  ctx.lineWidth = 1;
+  for (let v = 0; v <= 10; v += 2) {
+    const y = PAD.top + plotH - (v / 10) * plotH;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + plotW, y); ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.fillText(v, PAD.left - 20, y + 3);
+  }
+  for (let h = 0; h <= 24; h += 4) {
+    const x = PAD.left + (h / 24) * plotW;
+    ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, PAD.top + plotH); ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.fillText(h + ':00', x - 14, PAD.top + plotH + 18);
+  }
+
+  const barW = plotW / 24 * 0.6;
+  bgBar.forEach((v, h) => {
+    if (v > 0) {
+      const x = PAD.left + (h / 24) * plotW - barW / 2;
+      const bh = (v / 10) * plotH;
+      ctx.fillStyle = 'rgba(52,211,153,0.25)';
+      ctx.fillRect(x, PAD.top + plotH - bh, barW, bh);
+    }
+  });
+
+  function drawLine(data, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = PAD.left + (i / 24) * plotW;
+      const y = PAD.top + plotH - (v / 10) * plotH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+  drawLine(insulinData, '#818cf8');
+  drawLine(cortisolData, '#fb923c');
+  drawLine(ghData, '#38bdf8');
+  drawLine(melatoninData, '#a78bfa');
+
+  const dnlEl = document.getElementById('mv-dnl-time');
+  dnlEl.innerHTML = mealSignals.dnlIndex.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-dnl-time').className = 'metric-card ' + classifyIndex(mealSignals.dnlIndex);
+
+  document.getElementById('mv-gh').innerHTML = ghPulse.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-gh').className = 'metric-card ' + classifyIndex(10 - ghPulse);
+
+  const minIns = Math.min(...insulinData);
+  const lipolysis = calcLipolysisSupport({ fastingHours: fastDur, insulinDemand: minIns, exerciseLoad: 0, bodyFat: 0.2 });
+  const nightSupport = clamp(lipolysis * 0.65 + ghPulse * 0.35, 0, 10);
+  document.getElementById('mv-fat-burn').innerHTML = nightSupport.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-fat-burn').className = 'metric-card ' + classifyIndex(10 - nightSupport);
+
+  document.getElementById('mv-hsl').innerHTML = lipolysis.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-hsl').className = 'metric-card ' + classifyIndex(10 - lipolysis);
+
+  const sleepWindow = [0, 1, 2, 3].map(offset => melatoninData[(sleepStart + offset) % 24]);
+  const melNight = sleepWindow.reduce((a, b) => a + b, 0) / sleepWindow.length;
+  const melLabel = melNight > 6 ? '较强' : melNight > 3 ? '中等' : '较弱';
+  document.getElementById('mv-melatonin').textContent = melLabel;
+  document.getElementById('mc-melatonin').className = 'metric-card ' + classifyIndex(10 - melNight);
+
+  const ketone = calcKetoneTendency(fastDur, 0);
+  document.getElementById('mv-ketone').innerHTML = ketone.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-ketone').className = 'metric-card ' + classifyIndex(10 - ketone);
+}
+
+// 场景预设
+const scenarios = {
+  optimal: {
+    mt: 8, cg: 80, fd: 12, sl: 2, ss: 23, sq: 28,
+    desc: '🌅 <strong>较早进餐场景</strong>：上午进餐通常处于较好的昼夜葡萄糖耐量阶段；本模型同时考虑餐量、空腹与睡眠，不把它定义为人人适用的“最优早餐”。',
+    color: 'var(--accent)'
+  },
+  late_meal: {
+    mt: 22, cg: 120, fd: 4, sl: 4, ss: 1, sq: 15,
+    desc: '🌙 <strong>深夜高碳水场景</strong>：较晚进餐与较短餐间隔共同提高模型中的血糖反应和 DNL 倾向；这仍是相对比较，不是个人预测。',
+    color: 'var(--danger)'
+  },
+  if16: {
+    mt: 12, cg: 100, fd: 16, sl: 3, ss: 23, sq: 28,
+    desc: '⏱ <strong>16 小时餐间隔场景</strong>：模型中的脂解和酮体生成倾向上升，但不代表自噬已按固定时钟启动，也不构成断食建议。',
+    color: 'var(--accent2)'
+  },
+  stress: {
+    mt: 8, cg: 80, fd: 8, sl: 9, ss: 1, sq: 10,
+    desc: '😤 <strong>高压晚睡场景</strong>：压力和较低深睡比例削弱模型中的褪黑素与 GH 相关信号，展示睡眠环境的方向性影响。',
+    color: 'var(--warn)'
+  }
+};
+
+function loadScenario(key) {
+  const s = scenarios[key];
+  document.getElementById('s-mt').value  = s.mt;
+  document.getElementById('s-cg2').value = s.cg;
+  document.getElementById('s-fd').value  = s.fd;
+  document.getElementById('s-sl').value  = s.sl;
+  document.getElementById('s-ss').value  = s.ss;
+  document.getElementById('s-sq').value  = s.sq;
+  const desc = document.getElementById('scenario-desc');
+  desc.style.display = 'block';
+  desc.style.borderLeftColor = s.color;
+  desc.innerHTML = `<div class="callout-title">场景说明</div>${s.desc}`;
+  update24h();
+}
+
+// 初始化模块2
+update24h();
+window.addEventListener('resize', update24h);
+
+// ============================================================
+// 模块 3：跷跷板
+// ============================================================
+function updateSeesaw() {
+  const protein = +document.getElementById('s-pro').value;
+  const insulin = +document.getElementById('s-ins').value;
+  const fastDur = +document.getElementById('s-fd2').value;
+  const exScore = +document.getElementById('s-ex').value;
+
+  document.getElementById('v-pro').textContent = protein + ' g';
+  document.getElementById('v-ins').textContent = insulin + ' μU/mL';
+  document.getElementById('v-fd2').textContent = fastDur + ' h';
+  document.getElementById('v-ex').textContent = exScore + ' AU';
+
+  const proteinSignal = smoothstep(15, 160, protein) * 6;
+  const insulinSignal = smoothstep(3, 50, insulin) * 4;
+  const mtor = clamp(proteinSignal + insulinSignal, 0, 10);
+
+  const fastingSignal = smoothstep(8, 36, fastDur) * 5;
+  const exerciseSignal = smoothstep(0, 120, exScore) * 5;
+  const ampk = clamp(fastingSignal + exerciseSignal, 0, 10);
+
+  const autophagySignal = clamp(5 + ampk * 0.45 - mtor * 0.55, 0, 10);
+  const cleanupPressure = clamp(7 - autophagySignal * 0.55 + mtor * 0.25, 0, 10);
+
+  document.getElementById('mv-mtor').innerHTML = mtor.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-mtor').className = 'metric-card ' + (mtor > 7 ? 'warn' : mtor > 4 ? 'good' : '');
+  document.getElementById('mv-ampk').innerHTML = ampk.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-ampk').className = 'metric-card ' + (ampk > 5 ? 'good' : '');
+  document.getElementById('mv-auto').innerHTML = autophagySignal.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-auto').className = 'metric-card ' + (autophagySignal > 6 ? 'good' : autophagySignal < 3 ? 'alert' : '');
+  document.getElementById('mv-debris').innerHTML = cleanupPressure.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('mc-debris').className = 'metric-card ' + classifyIndex(cleanupPressure);
+
+  const stateEl = document.getElementById('mv-state-label');
+  if (mtor - autophagySignal > 2) {
+    stateEl.textContent = '🏗 合成信号占优';
+    stateEl.style.color = 'var(--glucose)';
+  } else if (autophagySignal - mtor > 2) {
+    stateEl.textContent = '🧹 清理相关信号占优';
+    stateEl.style.color = 'var(--accent2)';
+  } else {
+    stateEl.textContent = '⚖ 相对平衡';
+    stateEl.style.color = 'var(--accent)';
+  }
+
+  document.getElementById('mtor-warn').style.display = mtor > 7 ? 'block' : 'none';
+  drawSeesaw(mtor, autophagySignal);
+}
+
+function drawSeesaw(mtor, autophagy) {
+  const canvas = document.getElementById('seesaw-canvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 600;
+  const H = 160;
+  canvas.width  = W;
+  canvas.height = H;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const cy = H * 0.65;
+
+  // 倾斜角度（mTOR 侧下沉 = 右侧重，正角度 = 顺时针）
+  const diff  = mtor - autophagy;
+  const angle = clamp(diff * 9, -55, 55) * (Math.PI / 180);
+  const beamLen = W * 0.38;
+
+  // 支架
+  ctx.fillStyle = '#475569';
+  ctx.beginPath();
+  ctx.moveTo(cx - 12, cy + 10);
+  ctx.lineTo(cx + 12, cy + 10);
+  ctx.lineTo(cx, cy - 12);
+  ctx.closePath();
+  ctx.fill();
+
+  // 横梁
+  ctx.save();
+  ctx.translate(cx, cy - 12);
+  ctx.rotate(angle);
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-beamLen, 0);
+  ctx.lineTo(beamLen, 0);
+  ctx.stroke();
+
+  // 左端（AMPK/自噬）
+  const leftY  = -beamLen * Math.tan(angle > 0 ? 0 : angle);
+  const rightY =  beamLen * Math.tan(angle > 0 ? angle : 0);
+
+  // 左侧盘子
+  ctx.fillStyle = 'rgba(129,140,248,0.15)';
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(-beamLen, 0, 28, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#818cf8';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('AMPK', -beamLen, -6);
+  ctx.fillText('自噬', -beamLen, 8);
+  ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillText(autophagy.toFixed(1), -beamLen, 24);
+
+  // 右侧盘子
+  ctx.fillStyle = 'rgba(248,113,113,0.15)';
+  ctx.strokeStyle = '#f87171';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(beamLen, 0, 28, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#f87171';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('mTOR', beamLen, -6);
+  ctx.fillText('合成', beamLen, 8);
+  ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillText(mtor.toFixed(1), beamLen, 24);
+
+  ctx.restore();
+
+  // 底部标注
+  ctx.fillStyle = '#475569';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('← 清理 / 自噬', 16, H - 10);
+  ctx.textAlign = 'right';
+  ctx.fillText('合成 / 增殖 →', W - 16, H - 10);
+}
+
+// 初始化模块3
+updateSeesaw();
+window.addEventListener('resize', () => { updateSeesaw(); update24h(); });
+
+// ============================================================
+// Sandbox 完整模拟
+// ============================================================
+function updateSandbox() {
+  const cg = +document.getElementById('sb-cg').value;
+  const cf = +document.getElementById('sb-cf').value;
+  const fat = +document.getElementById('sb-fat').value;
+  const pro = +document.getElementById('sb-pro').value;
+  const mt = +document.getElementById('sb-mt').value;
+  const fd = +document.getElementById('sb-fd').value;
+  const ei = +document.getElementById('sb-ei').value;
+  const ed = +document.getElementById('sb-ed').value;
+  const sl = +document.getElementById('sb-sl').value;
+  const etRaw = +document.getElementById('sb-et').value;
+  const sdur = +document.getElementById('sb-sdur').value;
+  const sq = +document.getElementById('sb-sq').value / 100;
+  const ss = +document.getElementById('sb-ss').value % 24;
+  const bf = +document.getElementById('sb-bf').value / 100;
+  const isBase = +document.getElementById('sb-is').value / 10;
+
+  document.getElementById('sb-v-cg').textContent = cg + ' g';
+  document.getElementById('sb-v-cf').textContent = cf + ' g';
+  document.getElementById('sb-v-fat').textContent = fat + ' g';
+  document.getElementById('sb-v-pro').textContent = pro + ' g';
+  document.getElementById('sb-v-mt').textContent = fmtHour(mt);
+  document.getElementById('sb-v-fd').textContent = fd + ' h';
+  document.getElementById('sb-v-ei').textContent = ei;
+  document.getElementById('sb-v-ed').textContent = ed + ' min';
+  document.getElementById('sb-v-sl').textContent = sl;
+  document.getElementById('sb-v-et').textContent = ['无', '有氧', '无氧'][etRaw];
+  document.getElementById('sb-v-sdur').textContent = sdur + ' h';
+  document.getElementById('sb-v-sq').textContent = Math.round(sq * 100) + '%';
+  document.getElementById('sb-v-ss').textContent = fmtHour(ss);
+  document.getElementById('sb-v-bf').textContent = Math.round(bf * 100) + '%';
+  document.getElementById('sb-v-is').textContent = isBase.toFixed(1);
+
+  const rawExerciseLoad = ei * ed;
+  const exerciseLoad = rawExerciseLoad * (etRaw === 0 ? 0 : 1);
+  const typeFactor = etRaw === 2 ? 1.55 : etRaw === 1 ? 0.85 : 0;
+  const exerciseGlycogen = exerciseLoad * typeFactor / 4;
+  const bodyFatIS = clamp(1 - Math.max(0, bf - 0.2) * 0.9, 0.65, 1.08);
+  const effectiveISInput = clamp(isBase * bodyFatIS, 0.25, 1.5);
+  const glycogenPct = clamp(70 - fd * 0.75 - exerciseGlycogen * 0.18, 20, 90);
+
+  const meal = calcMealSignals({
+    glucose: cg,
+    fructose: cf,
+    glycogenPct,
+    mealHour: mt,
+    insulinSensitivity: effectiveISInput,
+    dietaryFat: fat,
+    exerciseGlycogen
+  });
+
+  const lipolysis = calcLipolysisSupport({
+    fastingHours: fd,
+    insulinDemand: meal.insulinDemand,
+    exerciseLoad,
+    bodyFat: bf
+  });
+  const ketone = calcKetoneTendency(fd, exerciseLoad);
+
+  const proteinSignal = smoothstep(15, 180, pro) * 6;
+  const mtor = clamp(proteinSignal + meal.insulinDemand * 0.4, 0, 10);
+  const exerciseAmpkFactor = etRaw === 1 ? 1.0 : etRaw === 2 ? 0.82 : 0;
+  const ampk = clamp(smoothstep(8, 36, fd) * 4.5 + smoothstep(0, 900, exerciseLoad) * 5.5 * exerciseAmpkFactor, 0, 10);
+  const autophagy = clamp(5 + ampk * 0.45 - mtor * 0.55, 0, 10);
+
+  const circadianSleepAlignment = 1 - Math.min(Math.abs(((ss - 23 + 12) % 24) - 12), 6) / 6;
+  const nightCortisol = clamp(2 + sl * 0.65, 2, 10);
+  const ghPulse = clamp(sdur * sq * 1.9 * (1 - nightCortisol / 14) * (0.7 + circadianSleepAlignment * 0.3), 0, 10);
+
+  const energyLoad = cg * 4 + cf * 4 + fat * 9 + pro * 4;
+  const exerciseOffset = exerciseLoad * (etRaw === 0 ? 0 : 0.45);
+  const netEnergyPressure = clamp((energyLoad - 1800 - exerciseOffset) / 1200, -1, 1);
+
+  let glucoseFrac = clamp(0.38 + meal.glucoseResponse * 0.035 - fd * 0.006, 0.08, 0.78);
+  let ketoneFrac = clamp(ketone / 10 * 0.28, 0.01, 0.28);
+  let fatFrac = clamp(1 - glucoseFrac - ketoneFrac + lipolysis * 0.01, 0.08, 0.85);
+  // 运动类型参与燃料倾向：无氧更偏糖酵解，有氧更偏脂肪氧化（仅为教学方向）。
+  if (etRaw === 2) { glucoseFrac += 0.08; fatFrac -= 0.05; }
+  if (etRaw === 1) { glucoseFrac -= 0.03; fatFrac += 0.05; }
+  const fuelTotal = glucoseFrac + fatFrac + ketoneFrac;
+  glucoseFrac /= fuelTotal;
+  fatFrac /= fuelTotal;
+  ketoneFrac /= fuelTotal;
+
+  let score = 50;
+  score += (10 - meal.glucoseResponse) * 1.6;
+  score += (10 - meal.dnlIndex) * 1.1;
+  score += lipolysis * 0.6;
+  score += ghPulse * 0.8;
+  score += clamp(sdur - 6, -3, 3) * 2;
+  score += clamp(sq * 100 - 15, -10, 15) * 0.25;
+  score += clamp(exerciseLoad / 90, 0, 8);
+  score += etRaw === 1 ? 2 : etRaw === 2 ? 1 : -2;
+  score -= sl * 1.3;
+  score -= Math.max(0, netEnergyPressure) * 10;
+  score -= Math.max(0, bf - 0.35) * 25;
+  score = clamp(Math.round(score), 0, 100);
+
+
+  document.getElementById('sb-mv-bg').innerHTML = meal.glucoseResponse.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-bg').className = 'metric-card ' + classifyIndex(meal.glucoseResponse);
+  document.getElementById('sb-mv-ins').innerHTML = meal.insulinDemand.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-ins').className = 'metric-card ' + classifyIndex(meal.insulinDemand);
+  document.getElementById('sb-mv-dnl').innerHTML = meal.dnlIndex.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-dnl').className = 'metric-card ' + classifyIndex(meal.dnlIndex);
+  document.getElementById('sb-mv-hsl').innerHTML = lipolysis.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-hsl').className = 'metric-card ' + classifyIndex(10 - lipolysis);
+  document.getElementById('sb-mv-ketone').innerHTML = ketone.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-ketone').className = 'metric-card ' + classifyIndex(10 - ketone);
+  document.getElementById('sb-mv-gh').innerHTML = ghPulse.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-gh').className = 'metric-card ' + classifyIndex(10 - ghPulse);
+  document.getElementById('sb-mv-auto').innerHTML = autophagy.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-auto').className = 'metric-card ' + (autophagy > 6 ? 'good' : autophagy < 3 ? 'alert' : 'warn');
+  document.getElementById('sb-mv-ua').innerHTML = meal.uricLoad.toFixed(1) + '<span class="metric-unit">/10</span>';
+  document.getElementById('sb-mc-ua').className = 'metric-card ' + classifyIndex(meal.uricLoad);
+
+  document.getElementById('sb-score-val').textContent = score;
+  document.getElementById('sb-score-val').style.color = score >= 75 ? 'var(--accent)' : score >= 50 ? 'var(--warn)' : 'var(--danger)';
+  document.getElementById('sb-score-bar').style.width = score + '%';
+  const scoreBadge = document.getElementById('sb-score-badge');
+  if (score >= 75) scoreBadge.innerHTML = '<span class="badge badge-green">情境较平衡</span>';
+  else if (score >= 50) scoreBadge.innerHTML = '<span class="badge badge-orange">存在权衡</span>';
+  else scoreBadge.innerHTML = '<span class="badge badge-red">模型负担较高</span>';
+
+  document.getElementById('sb-score-breakdown').innerHTML =
+    `血糖反应：${meal.glucoseResponse.toFixed(1)}/10 ·
+     DNL 倾向：${meal.dnlIndex.toFixed(1)}/10 ·
+     脂解支持：${lipolysis.toFixed(1)}/10 ·
+     GH 信号：${ghPulse.toFixed(1)}/10 ·
+     自噬相关信号：${autophagy.toFixed(1)}/10`;
+
+  const gEl = document.getElementById('fuel-glucose');
+  const fEl = document.getElementById('fuel-fat');
+  const kEl = document.getElementById('fuel-ketone');
+  gEl.style.flex = glucoseFrac.toFixed(2);
+  fEl.style.flex = fatFrac.toFixed(2);
+  kEl.style.flex = ketoneFrac.toFixed(2);
+  gEl.textContent = Math.round(glucoseFrac * 100) + '%';
+  fEl.textContent = Math.round(fatFrac * 100) + '%';
+  kEl.textContent = Math.round(ketoneFrac * 100) + '%';
+
+  const advEl = document.getElementById('sb-advice');
+  const tips = [];
+  if (mt >= 20 && cg >= 60) tips.push({ c: 'warn', t: '在本模型中，较晚的高碳水餐会提高餐后反应指数；可比较把同一餐提前后的变化。' });
+  if (meal.dnlIndex > 7) tips.push({ c: 'danger', t: 'DNL 倾向较高：主要由总能量压力、糖原充盈度、果糖负荷与活动消耗共同驱动。' });
+  if (lipolysis < 3) tips.push({ c: 'warn', t: '脂解支持较低。它是连续指标，并不代表脂肪完全不能被利用。' });
+  if (sl >= 7) tips.push({ c: 'warn', t: '压力水平较高，模型中的睡眠相关激素信号受到抑制。' });
+  if (sdur < 6) tips.push({ c: 'warn', t: '睡眠时长较短；优先改善规律睡眠通常比追求极端断食更稳妥。' });
+  if (cf > 60) tips.push({ c: 'danger', t: '游离果糖输入较高，模型中的肝脏底物与尿酸生成负荷上升；完整水果不能按相同克数简单代入。' });
+  if (fd > 24) tips.push({ c: 'warn', t: '超过 24 小时的断食不属于本教育模型可提供建议的范围；特殊人群应咨询专业人员。' });
+  if (score >= 75) tips.push({ c: 'good', t: '当前参数在本模型内部较平衡；该评分不能与其他人比较，也不代表医学健康评分。' });
+
+  if (tips.length === 0) {
+    advEl.innerHTML = '<div class="model-note">调整任意滑块，比较相对方向。不要把单次结果当作个人化医学结论。</div>';
+  } else {
+    advEl.innerHTML = '<div style="font-size:12px;color:var(--text2);letter-spacing:1px;margin-bottom:10px;">模型解释</div>' +
+      tips.map(tp => `<div class="callout ${tp.c === 'danger' ? 'danger' : tp.c === 'warn' ? 'warn' : ''}" style="margin:8px 0;padding:12px 16px;"><span style="font-size:14px;">${tp.c === 'danger' ? '🔴' : tp.c === 'warn' ? '🟡' : '🟢'} ${tp.t}</span></div>`).join('');
+  }
+}
+
+// 初始化 sandbox
+updateSandbox();
+
+// ============================================================
+// Anki 卡片数据
+// ============================================================
+const ankiCards = [
+  {
+    q: '糖原状态如何影响碳水去向？',
+    a: '糖原较低时，摄入碳水更可能用于补充糖原和氧化；糖原较高、活动消耗较低且持续能量过剩时，DNL 的相对贡献可能上升。不存在适用于所有人的固定 90g 开关。',
+    tag: '燃料路由 · 糖原 · DNL'
+  },
+  {
+    q: '为什么果糖的低血糖反应不等于零代谢负荷？',
+    a: '果糖的直接餐后血糖和胰岛素反应通常低于葡萄糖，但主要在肝脏代谢。高量游离果糖可增加肝脏底物和尿酸生成负荷；其去向包括氧化、葡萄糖、乳酸、糖原和脂质，并非固定 50% 转脂。',
+    tag: '果糖 · 肝脏代谢 · 尿酸'
+  },
+  {
+    q: '胰岛素如何影响脂解？',
+    a: '胰岛素以剂量依赖方式抑制脂解，反应因组织和个体胰岛素敏感性而异。脂解不是在 3.0 μU/mL 处突然开关，因此页面使用连续的脂解支持指数。',
+    tag: '胰岛素 · 脂解'
+  },
+  {
+    q: '早晚进餐差异最稳妥的结论是什么？',
+    a: '健康人群在生物学晚间通常表现出较低葡萄糖耐量，但个体差异、睡眠、昼夜类型和餐食组成都会影响结果，不能固定换算成脂肪合成倍数。',
+    tag: '昼夜节律 · 时间营养学'
+  },
+  {
+    q: 'mTOR、AMPK 与自噬为什么不能用简单按钮描述？',
+    a: '它们构成相互作用的营养与能量感知网络，而且不同组织的反应不同。页面中的 0–10 分只表示相对信号偏向，不是人体自噬通量。',
+    tag: 'mTOR · AMPK · 自噬'
+  },
+  {
+    q: '睡眠怎样影响代谢环境？',
+    a: '入睡后的慢波睡眠常伴随生长激素脉冲；睡眠受损和压力可能改变激素节律及底物利用环境，但不能据此计算每晚燃烧多少克脂肪。',
+    tag: '睡眠 · GH · 压力'
+  },
+  {
+    q: '本模型的 0–10 指数应该怎样解释？',
+    a: '它们是同一模型内部用于比较参数变化方向的归一化分数，不是血糖、胰岛素、尿酸或酮体化验值，不能跨人比较，也不能用于诊断。',
+    tag: '模型边界 · 相对指数'
+  },
+  {
+    q: '人体自噬是否有统一的 14–18 小时启动点？',
+    a: '没有公认的统一启动点。人体研究有限，不同组织、训练状态和测量方法的结果不同；较长空腹和运动可能改变相关信号，但不能据此给出固定断食处方。',
+    tag: '自噬 · 空腹 · 证据边界'
+  }
+];
+
+// 渲染 Anki 卡片
+function renderAnkiCards() {
+  const container = document.getElementById('anki-cards-container');
+  container.innerHTML = '';
+  ankiCards.forEach((card, i) => {
+    const div = document.createElement('div');
+    div.className = 'anki-card';
+    div.id = 'anki-' + i;
+    div.tabIndex = 0;
+    div.setAttribute('role', 'button');
+    div.setAttribute('aria-label', `知识卡片 ${i + 1}：${card.q}`);
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+        <div style="flex:1;">
+          <div class="anki-q">Q${i+1}. ${card.q}</div>
+          <div class="anki-a" id="anki-a-${i}">${card.a}</div>
+          <div class="anki-tag">${card.tag}</div>
+        </div>
+        <div class="anki-checkbox" id="anki-cb-${i}"></div>
+      </div>
+    `;
+    div.addEventListener('click', () => toggleAnkiCard(i));
+    div.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleAnkiCard(i);
+      }
+    });
+    container.appendChild(div);
+  });
+  updateAnkiCount();
+}
+
+const ankiSelected = new Set();
+
+function toggleAnkiCard(i) {
+  const card = document.getElementById('anki-' + i);
+  const ans  = document.getElementById('anki-a-' + i);
+  // 第一次点击展开答案，第二次点击选中/取消
+  if (!ans.classList.contains('visible')) {
+    ans.classList.add('visible');
+    return;
+  }
+  if (ankiSelected.has(i)) {
+    ankiSelected.delete(i);
+    card.classList.remove('selected');
+  } else {
+    ankiSelected.add(i);
+    card.classList.add('selected');
+  }
+  updateAnkiCount();
+}
+
+function selectAllAnki() {
+  ankiCards.forEach((_, i) => {
+    ankiSelected.add(i);
+    const card = document.getElementById('anki-' + i);
+    const ans  = document.getElementById('anki-a-' + i);
+    if (card) card.classList.add('selected');
+    if (ans)  ans.classList.add('visible');
+  });
+  updateAnkiCount();
+}
+
+function deselectAllAnki() {
+  ankiSelected.clear();
+  ankiCards.forEach((_, i) => {
+    const card = document.getElementById('anki-' + i);
+    if (card) card.classList.remove('selected');
+  });
+  updateAnkiCount();
+}
+
+function updateAnkiCount() {
+  document.getElementById('anki-selected-count').textContent = ankiSelected.size;
+}
+
+function exportAnki() {
+  if (ankiSelected.size === 0) {
+    showToast('请先选择至少一张卡片');
+    return;
+  }
+  const lines = ['#separator:tab', '#html:false', '#deck:代谢引擎', '#notetype:Basic'];
+  ankiSelected.forEach(i => {
+    const card = ankiCards[i];
+    // 清理 HTML 标签用于纯文本导出
+    const q = card.q.replace(/<[^>]+>/g, '');
+    const a = card.a.replace(/<[^>]+>/g, '') + '\n[标签: ' + card.tag + ']';
+    lines.push(q + '\t' + a);
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'metabolic_engine_anki.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`已导出 ${ankiSelected.size} 张卡片 ✓`);
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+renderAnkiCards();
+
+// 为滑块补充可访问名称
+ document.querySelectorAll('input[type="range"]').forEach(input => {
+  if (!input.getAttribute('aria-label')) {
+    const label = input.closest('.slider-group')?.querySelector('.slider-label span:first-child')?.textContent?.trim();
+    if (label) input.setAttribute('aria-label', label);
+  }
+});
+
+// 移动端导航
+const navToggle = document.getElementById('nav-toggle');
+const navLinks = document.getElementById('nav-links');
+if (navToggle && navLinks) {
+  navToggle.addEventListener('click', () => {
+    const open = navLinks.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', String(open));
+  });
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+    navLinks.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }));
+}
+
+// 滚动出现动画（IntersectionObserver）
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.section, .interactive, .insight-reveal').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+}
+
+</script>
+<script src="/Static/js/jquery.js"></script><script src="/Static/js/Global.js"></script><script src="/Web/js/Global.js"></script><script src="/Web/js/SoruxGPT.js"></script></body>
+</html>
